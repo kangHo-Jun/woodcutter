@@ -90,3 +90,8 @@ ENV/
 
 # IntelliJ PyCharm
 .idea/
+
+# Custom
+.DS_Store
+*.pdf
+v2/ex/

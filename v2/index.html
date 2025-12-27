@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOOD CUT PRO</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Minimalist Top Bar -->
+        <header class="app-header">
+            <div class="logo">Wood Cut <span>PRO</span></div>
+            <div class="header-actions">
+                <button class="btn btn-icon" id="toggleTheme" title="테마 변경">🌗</button>
+            </div>
+        </header>
+
+        <main class="app-layout">
+            <!-- Sidebar / Control Panel -->
+            <aside class="sidebar glass">
+                <div class="sidebar-content">
+                    <section class="control-group">
+                        <h2 class="label">원판 규격</h2>
+                        <div class="input-row">
+                            <div class="field">
+                                <span>W</span>
+                                <input type="number" id="boardWidth" value="2440">
+                            </div>
+                            <div class="field">
+                                <span>H</span>
+                                <input type="number" id="boardHeight" value="1220">
+                            </div>
+                        </div>
+                        <div class="field mt-3">
+                            <span style="font-size: 0.7rem; color: var(--text-muted);">Kerf (mm)</span>
+                            <input type="number" id="kerfInput" value="5">
+                        </div>
+                    </section>
+
+                    <section class="control-group">
+                        <h2 class="label">부품 추가</h2>
+                        <div class="input-row">
+                            <div class="field">
+                                <input type="number" id="partWidth" placeholder="가로">
+                            </div>
+                            <div class="field">
+                                <input type="number" id="partHeight" placeholder="세로">
+                            </div>
+                        </div>
+                        <div class="field mt-2">
+                            <input type="number" id="partQty" value="1" placeholder="수량">
+                        </div>
+
+                        <label class="toggle-control mt-3">
+                            <input type="checkbox" id="partRotatable" checked>
+                            <span class="slider"></span>
+                            <span class="toggle-text">회전 허용 (결방향 무관)</span>
+                        </label>
+
+                        <button class="btn btn-primary btn-full mt-4" id="addPartBtn">
+                            부품 리스트 추가
+                        </button>
+                    </section>
+
+                    <section class="control-group parts-list-section">
+                        <div class="section-header">
+                            <h2 class="label">부품 목록</h2>
+                            <button id="clearBtn" class="link-btn">Clear all</button>
+                        </div>
+                        <div class="parts-container" id="partsList">
+                            <!-- Dynamic -->
+                        </div>
+                    </section>
+
+                    <div class="sidebar-footer">
+                        <button class="btn btn-primary btn-full btn-lg" id="calculateBtn">
+                            최적화 실행
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Preview Area -->
+            <div class="main-content">
+                <div class="view-tabs">
+                    <button class="tab-btn active" data-view="3d">3D Preview</button>
+                    <button class="tab-btn" data-view="2d">2D Drawing</button>
+                </div>
+
+                <div class="preview-container glass">
+                    <!-- 3D View -->
+                    <div id="threeContainer" class="view-item active"></div>
+                    <!-- 2D View -->
+                    <div id="canvasContainer" class="view-item">
+                        <canvas id="resultCanvas"></canvas>
+                    </div>
+
+                    <!-- Placeholder for no results -->
+                    <div id="emptyState" class="empty-state">
+                        <div class="icon">📦</div>
+                        <h3>재단 데이터를 입력하세요</h3>
+                        <p>사이드바에서 부품을 추가하고 최적화 버튼을 클릭하세요.</p>
+                    </div>
+                </div>
+
+                <!-- Bento Grid Statistics -->
+                <div class="bento-grid" id="statsGrid">
+                    <div class="bento-item glass">
+                        <span class="bento-label">배치 효율</span>
+                        <div class="bento-value" id="statEfficiency">0%</div>
+                    </div>
+                    <div class="bento-item glass">
+                        <span class="bento-label">남은 면적</span>
+                        <div class="bento-value" id="statWaste">0%</div>
+                    </div>
+                    <div class="bento-item glass">
+                        <span class="bento-label">배치 완료</span>
+                        <div class="bento-value" id="statPlaced">0/0</div>
+                    </div>
+                    <div class="bento-item glass">
+                        <span class="bento-label">사용 면적</span>
+                        <div class="bento-value" id="statArea">0 m²</div>
+                    </div>
+                </div>
+
+                <div class="action-bar" id="resultActions" style="display: none;">
+                    <button class="btn btn-soft" id="downloadBtn">📸 스크린샷 저장</button>
+                    <button class="btn btn-soft" id="downloadPdfBtn">📄 PDF 리포트 발행</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Mobile Bottom Sheet (Conceptual UI for JS) -->
+        <div id="bottomSheet" class="bottom-sheet glass">
+            <div class="sheet-handle"></div>
+            <!-- Content will be mirrored or moved here in Mobile view via CSS/JS -->
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/packer.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/three-preview.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

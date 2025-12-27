@@ -161,14 +161,14 @@ class Woodcut(object):
         """
         Print the answer found
         """
-        print '\n'
+        print('\n')
         if self.lumber_name:
-            print 'Cuts for %s' % self.lumber_name
+            print('Cuts for %s' % self.lumber_name)
         waste = 0
         for i in range(len(self.lumbers)):
-            print '%d: %s' % (i+1, self.lumbers[i])
+            print('%d: %s' % (i+1, self.lumbers[i]))
             waste += self.lumbers[i].length_left()
-        print '\nTotal waste %2.2f or %2.1f percent' % (waste, 100 * waste / (len(self.lumbers) * self.lumber_length))
+        print('\nTotal waste %2.2f or %2.1f percent' % (waste, 100 * waste / (len(self.lumbers) * self.lumber_length)))
 
 
 if __name__ == "__main__":

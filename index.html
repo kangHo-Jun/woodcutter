@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>목재 재단 웹 프로그램</title>
+  <script src="https://code.jquery.com/jquery-1.12.4.min.js"
+    integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+    integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+    integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+    crossorigin="anonymous"></script>
+  <script type="text/javascript" src="./js/polyfill.js"></script>
+  <script type="text/javascript" src="./js/konva.min.js"></script>
+  <script type="text/javascript" src="./app.min.v1.2.js"></script>
+  <!-- <script type="text/javascript" src="./src/app.js?1234"></script> -->
+  <link rel="stylesheet" type="text/css" href="./css/style.css" />
+  <link rel="stylesheet" type="text/css" href="./css/icon-font/style.css" />
+  <script type="text/javascript" src="./js/object-assign-auto.min.js"></script>
+  <link rel="stylesheet" href="./css/alertify.css" />
+  <script type="text/javascript" src="./js/classlist.min.js"></script>
+  <script type="text/javascript" src="./js/alertify.js"></script>
+  <script type="text/javascript" src="./js/detect-browser.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="no-float" id="left-menu">
+
+        <div class="left-section" id="product-size">
+          <form>
+            <div class="form-group form-group-sm">
+              <label class="control-label" for="wood-width">가로</label>
+              <div class="control-input">
+                <input type="number" class="form-control" id="wood-width" min="1" />
+                <span class="size-mm-label">mm</span>
+              </div>
+            </div>
+            <div class="form-group form-group-sm">
+              <label class="control-label" for="wood-height">세로</label>
+              <div class="control-input">
+                <input type="number" class="form-control" id="wood-height" min="1" />
+                <span class="size-mm-label">mm</span>
+              </div>
+            </div>
+            <div class="form-group form-group-sm">
+              <label class="control-label" for="wood-thickness">
+                두께
+                <div class='btn btn-default' id="wood-thickness-info" data-container="body" data-trigger="hover"
+                  data-toggle="popover" data-placement="right" data-html="true" data-title="두께에 따른 1컷당 재단비"
+                  data-content='
+                    <table class="table table-condensed table-bordered">
+                      <tr>
+                        <td>5mm이하</td>
+                        <td>1000원</td>
+                      </tr>
+                      <tr>
+                        <td>6mm ~ 12mm</td>
+                        <td>1000원</td>
+                      </tr>
+					  <tr>
+                        <td>14mm ~ 23mm</td>
+                        <td>1500원</td>
+                      </tr>
+					  <tr>
+                        <td>24mm ~ 30mm</td>
+                        <td>2000원</td>
+                      </tr>
+                    </table>
+                    '>
+                  <span class="glyphicon glyphicon-question-sign"></span>
+                </div>
+              </label>
+              <div class="control-input">
+                <input type="number" class="form-control" id="wood-thickness" min="1" />
+                <span class="size-mm-label">mm</span>
+              </div>
+            </div>
+            <div class="form-group form-group-sm" id="pre-cutting-group">
+              <label class="control-label" for="pre-cutting">
+                전단컷팅
+                <div class='btn btn-default' id="pre-cutting-info" data-container="body" data-trigger="hover"
+                  data-toggle="popover" data-placement="right" data-html="true" data-title="전단컷팅이란?" data-content='
+                  전단 컷팅은 정확한 재단을 위해서 가로 세로 모서리를 7mm정도 컷팅하는 작업입니다.<br/> 이때 톱날 두께 5mm도 반영되기 때문에 가로 세로 각각 12mm 씩 소실 됩니다. 
+                    '>
+                  <span class="glyphicon glyphicon-question-sign"></span>
+                </div>
+              </label>
+              <div class="control-input">
+                <input type="checkbox" class="double-size-checkbox" id="pre-cutting">
+              </div>
+            </div>
+
+            <div class="text-center" id="product-size-warning-message-group">
+              <span class="text-danger" id="product-size-warning-message">나무크기, 전단컷팅 변경시 <br /><u>크기 변경</u>을 꼭
+                눌러주세요</span>
+            </div>
+          </form>
+          <a href="#" role="button" class="btn btn-warning full-button" id="product-resize">크기변경</a>
+
+        </div>
+
+        <div class="left-section" id="app-setting">
+          <div class="btn-group-vertical">
+            <div class="row">
+              <div class="btn-group">
+                <button class="btn btn-default" id="zoom-in">
+                  확대 <span class="glyphicon glyphicon-zoom-in"></span>
+                </button>
+                <button class="btn btn-default" id="zoom-out">
+                  축소 <span class="glyphicon glyphicon-zoom-out"></span>
+                </button>
+              </div>
+            </div>
+            <div class="row">
+              <div class="btn-group">
+                <button class="btn btn-default" id="move-canvas">
+                  이동 <span class="glyphicon glyphicon-move"></span>
+                </button>
+                <button class="btn btn-default" id="initialize-canvas">
+                  초기화 <span class="icon-undo2"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="left-section" id="app-control">
+          <div class="btn-group-vertical">
+            <button class="btn btn-default .text-success" id="save-to-file">
+              <a class="text-primary no-underline" disabled>
+                파일로 저장 <span class="glyphicon glyphicon-save"></span>
+              </a>
+            </button>
+            <button class="btn btn-default .text-success" id="all-save-to-file">
+              <a class="text-primary no-underline" disabled>
+                모두 파일로 저장
+                <span class="glyphicon glyphicon-save"></span>
+                <span class="glyphicon glyphicon-save"></span>
+              </a>
+            </button>
+            <button class="btn btn-default .text-info" id="app-help" data-toggle="modal" data-target="#app-help-modal">
+              도움말 <span class="glyphicon glyphicon-question-sign"></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="left-section" id="total-cutting-cost-section">
+          <div class="btn-group-vertical">
+            <button class="btn btn-info .text-info .overflow-x-auto-scroll" id="total-cutting-cost-button">
+              총 재단 비용: <span class="indicator-value" id="total-cutting-cost">0</span> 원
+            </button>
+          </div>
+
+        </div>
+
+        <div class="left-section" id="work-list-container">
+          <div class="list-group" id="work-list">
+            <!-- <button class="work-list-item list-group-item" type="button">목취도1</button> -->
+          </div>
+
+          <button id="add-work" class="btn btn-success full-button">
+            목취도 추가 <span class="glyphicon glyphicon-plus"></span>
+          </button>
+          <button class="btn btn-danger full-button" id="delete-work">
+            현재 목취도 삭제 <span class="glyphicon glyphicon-remove"></span>
+          </button>
+        </div>
+      </div>
+      <div class="no-float" id="right-body">
+        <header>
+
+          <div class="header-item" id="pick-standard-wood-size-area">
+            <div class="dropdown" id="pick-standard-wood-size-dropdown">
+              <button class="btn btn-warning dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown"
+                aria-haspopup="true" aria-expanded="true">
+                표준 나무 크기 선택
+                <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                <!-- wood-thickness 속성값을 주면 두께 지정 가능-->
+                <li>
+                  <a href="#" class="standard-wood-size" wood-width="2440" wood-height="1220" wood-thickness="12">
+                    12T x 1220 x 2440
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="standard-wood-size" wood-width="2440" wood-height="1220" wood-thickness="15">
+                    15T x 1220 x 2440
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="standard-wood-size" wood-width="2440" wood-height="1220" wood-thickness="18">
+                    18T x 1220 x 2440
+                  </a>
+                </li>
+                <li>
+                  <a href="#" class="standard-wood-size" wood-width="2440" wood-height="1220" wood-thickness="24">
+                    24T x 1220 x 2440
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="header-item" id="cutting-indicator-area">
+            <div class="cutting-indicator">
+              <p class="text-center">현재 컷팅수: <span id="cutting-num" class="indicator-value">0</span></p>
+            </div>
+            <div class="cutting-indicator">
+              <p class="text-center">재단비: <span id="cutting-cost" class="indicator-value">0</span> 원/장</p>
+            </div>
+
+          </div>
+
+          <div class="header-item" id="work-name-area">
+            <p class="bg-primary" id="work-name">목취도이름</p>
+          </div>
+
+          <div class="header-item" id="edit-work-name-area">
+            <a id="edit-work-name" href="#">
+              <span class="glyphicon glyphicon-pencil"></span>
+            </a>
+          </div>
+
+        </header>
+        <div id="main" tabindex="-1">
+
+        </div>
+        <footer>
+          <p>Copyright 2019. 주식회사 대산. All right reserved.</p>
+          <p>문의 : idnnatee@naver.com &#124; 전화 : 1661-6612</p>
+        </footer>
+
+
+      </div>
+
+    </div>
+
+  </div><!-- /.container -->
+  <div class="modal-container">
+    <div class="modal fade" id="total-cutting-cost-modal" tabindex="-1" role="dialog">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content" id='total-cutting-cost-modal-content'>
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                aria-hidden="true">&times;</span></button>
+            <h3 class="modal-title text-center"><strong><u>총 재단 비용 계산표</u></strong></h3>
+          </div>
+          <div class="modal-body">
+            <table class="table table-bordered" id="total-cutting-cost-content-table">
+              <!-- <tr> -->
+              <!--   <th>#</th> -->
+              <!--   <th>이름</th> -->
+              <!--   <th>크기</th> -->
+              <!--   <th>전단컷팅</th> -->
+              <!--   <th>컷팅수</th> -->
+              <!--   <th>장수</th> -->
+              <!--   <th>장당 재단비</th> -->
+              <!--   <th>재단비</th> -->
+              <!-- </tr> -->
+            </table>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+    <div class="modal fade" id="all-save-waiting-modal" tabindex="-1" role="dialog">
+      <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+          <div class="modal-body text-center">
+            <p> 저장중입니다. 잠시만 기다려주세요...</p>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+    <div class="modal fade" id="app-help-modal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title text-center">도움말</h4>
+          </div>
+          <div class="modal-body">
+            <p>
+              1. 나무 위에 마우스를 놓고 클릭하시면 [컷팅 생성 메뉴]가 나옵니다.
+            </p>
+            <p>
+              2. 모든 컷팅에는 톱날 두께 5mm 가 적용됩니다. 컷팅 생성시 모서리의 최소 길이는 1mm입니다.
+            </p>
+            <p>
+              3. <span class='bg-primary'>컷팅을 드래그하면 위치를 조절</span>하실 수 있습니다.
+            </p>
+            <p>
+              4. 컷팅을 클릭하면 현재 컷팅이 고정 되며 [컷팅 편집 메뉴]가 나옵니다. <span class='bg-primary'>[컷팅 편집 메뉴]가 보이는 상태에서 키보드의 화살표 키를 누르면
+                커팅을 1mm 간격으로 조절</span>할 수 있습니다.
+            </p>
+            <p>
+              5. 가로분할, 세로분할은 나무 조각의 왼쪽, 위쪽 모서리를 기준으로 하여 분할이 생성됩니다.
+            </p>
+            <p>
+              6. 가로분할, 세로분할 시 잔여조각의 길이까지 입력할 필요가 없습니다. 그냥 원하시는 조각의 길이만 입력하시면 됩니다.<br />
+            </p>
+            <p>
+              예1) 가로 길이 2000mm 의 나무조각을 가로 100mm 나무조각 4개로 분할하고 싶으시면<br />
+              &nbsp&nbsp&nbsp나무 클릭 -> 메뉴에서 [세로 분할] 클릭 -> 100*4 또는 100,100,100,100 입력
+            </p>
+            <p>
+              예2) 가로 길이 1000mm의 나무조각을 가로 100mm 나무조각 2개, 가로 50mm 나무조각 4개로 분할하고 싶으시면 <br />
+              &nbsp&nbsp&nbsp100*2, 50*4 입력
+            </p>
+            <p>
+              7. 목취도 화면에 문제가 생겼을 시, 다른 목취도를 선택했다가 다시 돌아오시면 됩니다. 만약 문제가 계속 발생하면 현재 목취도를 초기화한 후 컷팅을 새로 생성해주세요.
+            </p>
+            <p>
+              8. <span class='text-success'><u>필수 조각으로 지정되지 않은 조각은, 치수를 정확하게 맞추지 않고 필수조각 재단 후 남는 규격을 그대로 보내드립니다.
+                </u></span>목재 특성상, 제품의 규격 편차, 수축팽창, 톱날 소실
+              등 여러가지 사유로, 짜투리 부분의 규격까지 정확하게 나오지 않습니다.
+            </p>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+  </div>
+</body>
+
+</html>

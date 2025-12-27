@@ -1,0 +1,477 @@
+/* 
+ *
+ *  root
+ *
+ */
+
+
+* {
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  height: 100%;
+  background-color: #ddd;
+}
+
+.container {
+  display: table;
+  height: 100%;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.container>.row {
+  height: 100%;
+  display: flex;
+}
+
+.container .row .no-float {
+  height: 100%;
+  display: table-cell;
+  float: none;
+  vertical-align: top;
+}
+
+
+
+
+
+
+
+
+/* 
+ *
+ *  #left-menu
+ *
+ */
+
+#left-menu {
+  height: 100%;
+  background-color: #ddd;
+  width: 223px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+#left-menu .btn-default.active {
+  background-color: #565656 !important;
+  color: #fbfbfb !important;
+}
+
+
+#left-menu .left-section {
+  margin-bottom: 12px;
+}
+
+
+.left-section .btn-group-vertical {
+  width: 100%;
+}
+
+
+
+
+
+
+
+/* 
+ *
+ *  #left-menu > #product-size
+ *
+ */
+
+#product-size .form-group {
+  margin-bottom: 3px;
+  text-align: center;
+}
+
+#product-size .form-group>* {
+  display: inline-block;
+}
+
+#product-size .form-group .control-label {
+  width: 86px;
+  color: black;
+  text-align: center;
+  font: 'Nanum Gothic', serif;
+}
+
+#product-size .form-group .control-input {
+  width: 90px;
+}
+
+#product-size .form-group .control-input .form-control {
+  display: inline-block !important;
+  text-align: right;
+  width: 65px;
+  padding-right: 2px;
+  font-size: 15px;
+}
+
+#product-size .form-group .control-input .size-mm-label {
+  font-size: 12px;
+}
+
+#product-size .btn[data-toggle="popover"] {
+  padding: 1px 4px;
+  font-size: 14px;
+}
+
+.popover-content .table {
+  margin: 0;
+}
+
+.popover-title {
+  background-color: #6f5008;
+  color: #ffffff;
+  text-align: center;
+}
+
+.popover-content>table td {
+  text-align: center;
+}
+
+#product-size input[type="checkbox"] {
+  font-size: 16px;
+}
+
+#product-size-warning-message-group {
+  margin-top: -5px;
+  margin-bottom: 2px;
+}
+
+#product-size-warning-message {
+  font-size: 14px;
+  font-weight: 900;
+}
+
+
+
+
+
+
+
+
+/* 
+ *
+ *  #left-menu > #app-setting 
+ *
+ */
+
+#app-setting .btn-group-vertical {
+  width: 100%;
+}
+
+#app-setting .btn-group-vertical .row {
+  width: 100%;
+  margin: 0;
+  margin-bottom: -2px;
+}
+
+#app-setting .btn-group {
+  margin: 0 auto;
+  text-align: center;
+  width: 100%;
+  display: inline-block;
+}
+
+#app-setting .btn {
+  width: 50%;
+}
+
+
+
+
+
+
+/* 
+ *
+ *  #left-menu > #total-cutting-cost-section
+ *
+ */
+
+
+#total-cutting-cost-button {
+  overflow-x: auto !important;
+}
+
+.total-cutting-cost-row h5 {
+  margin: 5px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* 
+ *
+ *  #left-menu > #work-list-container
+ *
+ */
+
+
+#work-list-container .full-button {
+  margin-bottom: 3px;
+}
+
+#work-list {
+  margin-bottom: 5px !important;
+  height: 215px;
+  overflow-y: auto;
+}
+
+#work-list .work-list-item {
+  padding: 10px 5px 10px 10px;
+  display: flex;
+  display: -ms-flexbox;
+}
+
+.work-list-item .work-list-item-name {
+  margin-right: 5px;
+  margin-top: auto;
+  margin-bottom: auto;
+  height: 100%;
+  display: inline-block;
+  flex-grow: 1;
+}
+
+.work-list-item .edit-work-list-item-name-button {
+  color: currentColor;
+  font-size: 12px;
+}
+
+.work-list-item .work-copy {
+  margin-top: auto;
+  margin-bottom: auto;
+  width: 70px;
+  min-width: 70px;
+  height: 25px;
+  display: inline-block;
+}
+
+.work-list-item .work-copy-number {
+  color: black;
+  width: 50px;
+  height: 100%;
+  font-size: 16px;
+  text-align: right;
+  display: inline-block;
+}
+
+
+
+
+
+
+
+
+/* 
+ *
+ *  misc
+ *
+ */
+
+.btn:focus,
+button {
+  outline: none !important;
+}
+
+.no-underline {
+  text-decoration: none !important;
+}
+
+.full-button {
+  width: 100%;
+}
+
+.text-white {
+  color: #fefefe;
+}
+
+.bg-default {
+  background-color: white;
+}
+
+
+
+
+
+
+/* 
+ *
+ *  #right-body
+ *
+ */
+
+#right-body {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+
+
+
+
+
+
+
+
+/* 
+ *
+ *  #right-body > header
+ *
+ */
+
+#right-body>header {
+  background-color: #ddd;
+  height: 40px;
+  width: 1200px;
+  float: none;
+  position: relative;
+  /* height: auto; */
+}
+
+#right-body>header .header-item {
+  display: inline-block;
+  float: left;
+  margin-right: 15px;
+  height: 100%;
+  min-width: 0%;
+  width: auto;
+}
+
+
+/* 
+ *
+ *  header > #pick-standard-wood-size-area
+ *
+ */
+
+#pick-standard-wood-size-area {
+  margin-top: 3px;
+}
+
+
+
+
+/* 
+ *
+ *  header > #cutting-indicator-area
+ *
+ */
+
+.cutting-indicator {
+  border: 1px solid lightgray;
+  border-radius: 5px;
+  margin-top: 5px;
+  display: inline-block;
+}
+
+.cutting-indicator p {
+  padding: 5px 10px;
+  margin: 0px !important;
+  border-radius: 5px;
+  font-weight: 200;
+  color: #337ab7;
+  background-color: white;
+  display: inline-block;
+}
+
+.indicator-value {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+
+
+
+
+/* 
+ *
+ *  header > #work-name-area
+ *
+ */
+
+#work-name-area p {
+  /* clear:both; */
+  /* float: left; */
+  height: 100%;
+  font-size: 20px;
+  padding: 5px 15px;
+  margin: auto;
+}
+
+
+
+
+
+/* 
+ *
+ *  header > #edit-work-name-area
+ *
+ */
+
+
+#edit-work-name-area a {
+  margin-top: 8px;
+  font-size: 18px;
+  display: block;
+}
+
+
+
+
+
+
+/* 
+ *
+ *  #right-body > #main
+ *
+ */
+
+#main {
+  border: 1px solid #c2c2c2;
+  width: 1200px;
+  height: 675px;
+  overflow: hidden;
+}
+
+#main:focus {
+  outline: none;
+}
+
+.konvajs-content {
+  background-color: white;
+}
+
+
+
+
+
+/* 
+ *
+ *  #right-body > footer
+ *
+ */
+
+#right-body>footer {
+  padding-top: 5px;
+  text-align: center;
+}
+
+#right-body p {
+  margin-bottom: 0px;
+}
