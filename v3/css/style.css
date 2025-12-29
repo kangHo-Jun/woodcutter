@@ -1,0 +1,681 @@
+/* ============================================
+   대장간 V3 - Mobile-First Design System
+   Industrial Mono Theme
+   ============================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+    /* Industrial Mono Palette */
+    --bg-main: #1A1A1A;
+    --bg-card: #2D2D2D;
+    --bg-input: #3A3A3A;
+    --primary: #00D4AA;
+    --primary-dark: #00B894;
+    --text-main: #F5F5F5;
+    --text-muted: #888888;
+    --text-dim: #666666;
+    --border: #404040;
+    --danger: #FF6B6B;
+    
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    
+    /* Typography */
+    --font-sm: 14px;
+    --font-base: 16px;
+    --font-lg: 18px;
+    --font-xl: 24px;
+    --font-2xl: 32px;
+    
+    /* Radius */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+    
+    /* Touch Target */
+    --touch-min: 48px;
+    
+    /* Safe area */
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html, body {
+    height: 100%;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: var(--font-base);
+    background: var(--bg-main);
+    color: var(--text-main);
+    overflow: hidden;
+}
+
+/* ============================================
+   App Container & Header
+   ============================================ */
+
+.app-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.app-header {
+    height: 56px;
+    padding: 0 var(--space-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.logo {
+    font-weight: 700;
+    font-size: var(--font-lg);
+    letter-spacing: -0.02em;
+}
+
+.version {
+    background: var(--primary);
+    color: var(--bg-main);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+/* Step Indicator */
+.step-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.step {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    transition: color 0.3s;
+}
+
+.step.active {
+    color: var(--primary);
+}
+
+.step.done {
+    color: var(--text-muted);
+}
+
+.step-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--text-dim);
+}
+
+/* ============================================
+   Screens
+   ============================================ */
+
+.screen {
+    position: absolute;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+}
+
+.screen.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+.screen.prev {
+    transform: translateX(-100%);
+}
+
+.screen-content {
+    flex: 1;
+    padding: var(--space-lg);
+    overflow-y: auto;
+}
+
+.screen-title {
+    font-size: var(--font-xl);
+    font-weight: 700;
+    margin-bottom: var(--space-lg);
+    letter-spacing: -0.02em;
+}
+
+.screen-footer {
+    padding: var(--space-md);
+    padding-bottom: calc(var(--space-md) + var(--safe-bottom));
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.screen-footer.dual {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: var(--space-sm);
+}
+
+.screen-footer.triple {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--space-sm);
+}
+
+/* ============================================
+   Step 1: Settings
+   ============================================ */
+
+.section-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--space-sm);
+}
+
+.preset-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+}
+
+.preset-card {
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: var(--touch-min);
+}
+
+.preset-card:active {
+    transform: scale(0.98);
+}
+
+.preset-card.active {
+    border-color: var(--primary);
+    background: rgba(0, 212, 170, 0.1);
+}
+
+.preset-card.add-preset {
+    border-style: dashed;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+}
+
+.preset-icon {
+    font-size: var(--font-xl);
+    margin-bottom: var(--space-xs);
+}
+
+.preset-name {
+    display: block;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 4px;
+}
+
+.preset-size {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Settings Card */
+.settings-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md);
+}
+
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.setting-row:last-child {
+    border-bottom: none;
+}
+
+.setting-label {
+    font-size: var(--font-base);
+    color: var(--text-muted);
+}
+
+.setting-value {
+    font-size: var(--font-base);
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+/* ============================================
+   Step 2: Parts Input
+   ============================================ */
+
+.input-display {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+}
+
+.input-field {
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.input-field.active {
+    border-color: var(--primary);
+    background: rgba(0, 212, 170, 0.1);
+}
+
+.field-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: var(--space-xs);
+}
+
+.field-value {
+    display: block;
+    font-size: var(--font-xl);
+    font-weight: 700;
+    color: var(--text-main);
+    min-height: 32px;
+}
+
+/* Parts List */
+.parts-section {
+    flex: 1;
+    margin-bottom: var(--space-md);
+}
+
+.parts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-sm);
+}
+
+.parts-count {
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.parts-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.part-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--primary);
+}
+
+.part-info {
+    font-size: var(--font-base);
+    font-weight: 600;
+}
+
+.part-qty {
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-left: var(--space-sm);
+}
+
+.part-delete {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    border: none;
+    color: var(--danger);
+    font-size: var(--font-lg);
+    cursor: pointer;
+}
+
+/* Option Row */
+.option-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md);
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-md);
+}
+
+.option-label {
+    font-size: var(--font-base);
+    color: var(--text-muted);
+}
+
+/* Custom Keypad */
+.keypad-container {
+    background: var(--bg-card);
+    padding: var(--space-md);
+    padding-bottom: calc(var(--space-md) + var(--safe-bottom));
+    border-top: 1px solid var(--border);
+}
+
+.keypad {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-sm);
+}
+
+.key {
+    height: 56px;
+    border-radius: var(--radius-md);
+    border: none;
+    background: var(--bg-input);
+    color: var(--text-main);
+    font-size: var(--font-lg);
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.1s;
+}
+
+.key:active {
+    background: var(--border);
+    transform: scale(0.95);
+}
+
+.key-action {
+    background: var(--bg-main);
+    color: var(--primary);
+    font-size: var(--font-sm);
+}
+
+.key-delete {
+    background: rgba(255, 107, 107, 0.2);
+    color: var(--danger);
+}
+
+.key-back {
+    font-size: var(--font-xl);
+}
+
+.key-next {
+    background: var(--primary);
+    color: var(--bg-main);
+    font-weight: 700;
+}
+
+.key-double {
+    font-size: var(--font-base);
+}
+
+/* ============================================
+   Step 3: Results
+   ============================================ */
+
+.result-screen {
+    background: var(--bg-main);
+}
+
+.result-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-md);
+    overflow-y: auto;
+}
+
+.result-canvas-wrapper {
+    flex: 1;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md);
+    margin-bottom: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    min-height: 300px;
+}
+
+#resultCanvas {
+    flex: 1;
+    width: 100%;
+    border-radius: var(--radius-sm);
+}
+
+.canvas-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+}
+
+.canvas-ctrl {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    border: none;
+    color: var(--text-main);
+    font-size: var(--font-base);
+    cursor: pointer;
+}
+
+.board-indicator {
+    font-size: var(--font-base);
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-sm);
+}
+
+.stat-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+}
+
+.stat-card.primary {
+    grid-column: span 2;
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+}
+
+.stat-card.primary .stat-label,
+.stat-card.primary .stat-value {
+    color: var(--bg-main);
+}
+
+.stat-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: var(--space-xs);
+}
+
+.stat-value {
+    font-size: var(--font-xl);
+    font-weight: 700;
+}
+
+.stat-card.primary .stat-value {
+    font-size: var(--font-2xl);
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+
+.btn {
+    height: var(--touch-min);
+    border-radius: var(--radius-md);
+    border: none;
+    font-size: var(--font-base);
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: var(--bg-main);
+}
+
+.btn-secondary {
+    background: var(--bg-input);
+    color: var(--text-main);
+}
+
+.btn-soft {
+    background: var(--bg-card);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+}
+
+.btn-lg {
+    height: 56px;
+    font-size: var(--font-lg);
+}
+
+.link-btn {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: var(--font-sm);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* ============================================
+   Toggle Switch
+   ============================================ */
+
+.toggle {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 32px;
+}
+
+.toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-input);
+    border-radius: var(--radius-full);
+    transition: 0.3s;
+}
+
+.toggle-slider:before {
+    content: "";
+    position: absolute;
+    height: 26px;
+    width: 26px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+
+input:checked + .toggle-slider {
+    background: var(--primary);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(20px);
+}
+
+/* ============================================
+   Utilities
+   ============================================ */
+
+.hidden {
+    display: none !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 4px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}

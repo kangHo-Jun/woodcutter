@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1A1A1A">
+    <title>대장간 V3</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Step Indicator -->
+        <header class="app-header">
+            <div class="logo">대장간 <span class="version">V3</span></div>
+            <div class="step-indicator">
+                <span class="step active" data-step="1">설정</span>
+                <span class="step-dot"></span>
+                <span class="step" data-step="2">입력</span>
+                <span class="step-dot"></span>
+                <span class="step" data-step="3">결과</span>
+            </div>
+        </header>
+
+        <!-- Step 1: Settings -->
+        <section class="screen active" id="step1">
+            <div class="screen-content">
+                <h2 class="screen-title">원판 설정</h2>
+                
+                <!-- Preset Cards -->
+                <div class="preset-section">
+                    <p class="section-label">저장된 프리셋</p>
+                    <div class="preset-grid" id="presetGrid">
+                        <button class="preset-card active" data-w="2440" data-h="1220" data-t="18" data-k="5">
+                            <span class="preset-name">표준 MDF</span>
+                            <span class="preset-size">2440×1220</span>
+                        </button>
+                        <button class="preset-card" data-w="2440" data-h="1220" data-t="15" data-k="5">
+                            <span class="preset-name">얇은 합판</span>
+                            <span class="preset-size">2440×1220</span>
+                        </button>
+                        <button class="preset-card" data-w="1220" data-h="2440" data-t="18" data-k="5">
+                            <span class="preset-name">세로 배치</span>
+                            <span class="preset-size">1220×2440</span>
+                        </button>
+                        <button class="preset-card add-preset" id="addPresetBtn">
+                            <span class="preset-icon">+</span>
+                            <span class="preset-name">추가</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Current Settings Display -->
+                <div class="settings-card">
+                    <div class="setting-row">
+                        <span class="setting-label">원판 크기</span>
+                        <span class="setting-value" id="displayBoardSize">2440 × 1220 mm</span>
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label">판 두께 (T)</span>
+                        <span class="setting-value" id="displayThickness">18 mm</span>
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label">톱날 두께 (Kerf)</span>
+                        <span class="setting-value" id="displayKerf">5 mm</span>
+                    </div>
+                    <div class="setting-row toggle-row">
+                        <span class="setting-label">전단컷팅</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="preCutting">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Hidden inputs for actual values -->
+                <input type="hidden" id="boardWidth" value="2440">
+                <input type="hidden" id="boardHeight" value="1220">
+                <input type="hidden" id="boardThickness" value="18">
+                <input type="hidden" id="kerfInput" value="5">
+            </div>
+
+            <div class="screen-footer">
+                <button class="btn btn-primary btn-lg" id="toStep2Btn">
+                    다음: 부품 입력 →
+                </button>
+            </div>
+        </section>
+
+        <!-- Step 2: Parts Input -->
+        <section class="screen" id="step2">
+            <div class="screen-content">
+                <h2 class="screen-title">부품 입력</h2>
+
+                <!-- Input Fields -->
+                <div class="input-display">
+                    <div class="input-field active" data-field="width">
+                        <span class="field-label">가로</span>
+                        <span class="field-value" id="inputWidth">-</span>
+                    </div>
+                    <div class="input-field" data-field="height">
+                        <span class="field-label">세로</span>
+                        <span class="field-value" id="inputHeight">-</span>
+                    </div>
+                    <div class="input-field" data-field="qty">
+                        <span class="field-label">수량</span>
+                        <span class="field-value" id="inputQty">1</span>
+                    </div>
+                </div>
+
+                <!-- Parts List -->
+                <div class="parts-section">
+                    <div class="parts-header">
+                        <span class="parts-count" id="partsCount">부품 0개</span>
+                        <button class="link-btn" id="clearAllBtn">전체삭제</button>
+                    </div>
+                    <div class="parts-list" id="partsList">
+                        <!-- Dynamic parts will be added here -->
+                    </div>
+                </div>
+
+                <!-- Grain Direction Toggle -->
+                <div class="option-row">
+                    <span class="option-label">결방향 무관</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="partRotatable" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Custom Keypad -->
+            <div class="keypad-container">
+                <div class="keypad">
+                    <button class="key" data-key="1">1</button>
+                    <button class="key" data-key="2">2</button>
+                    <button class="key" data-key="3">3</button>
+                    <button class="key key-action" data-key="+50">+50</button>
+                    <button class="key" data-key="4">4</button>
+                    <button class="key" data-key="5">5</button>
+                    <button class="key" data-key="6">6</button>
+                    <button class="key key-action" data-key="+100">+100</button>
+                    <button class="key" data-key="7">7</button>
+                    <button class="key" data-key="8">8</button>
+                    <button class="key" data-key="9">9</button>
+                    <button class="key key-delete" data-key="C">C</button>
+                    <button class="key key-double" data-key="00">00</button>
+                    <button class="key" data-key="0">0</button>
+                    <button class="key key-back" data-key="←">←</button>
+                    <button class="key key-next" data-key="next" id="keyNext">다음</button>
+                </div>
+            </div>
+
+            <div class="screen-footer dual">
+                <button class="btn btn-secondary" id="toStep1Btn">← 설정</button>
+                <button class="btn btn-primary" id="calculateBtn">최적화 실행</button>
+            </div>
+        </section>
+
+        <!-- Step 3: Results (Bottom Sheet Style) -->
+        <section class="screen result-screen" id="step3">
+            <div class="result-content">
+                <!-- Canvas for 2D drawing -->
+                <div class="result-canvas-wrapper">
+                    <canvas id="resultCanvas"></canvas>
+                    <div class="canvas-controls">
+                        <button class="canvas-ctrl" id="prevBoard">◀</button>
+                        <span class="board-indicator" id="boardIndicator">1/1</span>
+                        <button class="canvas-ctrl" id="nextBoard">▶</button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card primary">
+                        <span class="stat-label">예상 비용</span>
+                        <span class="stat-value" id="statCost">0원</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">절단 횟수</span>
+                        <span class="stat-value" id="statCuts">0회</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">사용 원판</span>
+                        <span class="stat-value" id="statBoards">0장</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">배치 효율</span>
+                        <span class="stat-value" id="statEfficiency">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="screen-footer triple">
+                <button class="btn btn-secondary" id="backToInputBtn">← 다시 입력</button>
+                <button class="btn btn-soft" id="downloadPdfBtn">📄 PDF</button>
+                <button class="btn btn-soft" id="shareBtn">📤 공유</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/packer.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
