@@ -103,6 +103,35 @@ body {
     margin-bottom: 12px;
 }
 
+/* Collapsible section */
+details summary {
+    list-style: none;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+details summary::-webkit-details-marker {
+    display: none;
+}
+
+details summary:after {
+    content: "▼";
+    font-size: 0.6rem;
+    transition: transform 0.2s;
+}
+
+details[open] summary:after {
+    transform: rotate(180deg);
+}
+
 .input-row {
     display: flex;
     gap: 8px;
@@ -123,6 +152,37 @@ body {
     font-weight: 700;
     color: var(--text-muted);
     margin-right: 8px;
+}
+
+/* Table-like Input Row */
+.input-table-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 6px;
+    align-items: center;
+}
+
+.input-table-row .field {
+    padding: 0 8px;
+    height: 36px;
+}
+
+.input-table-row input {
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.btn-add-inline {
+    width: 40px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    font-weight: 400;
 }
 
 input {
@@ -430,5 +490,27 @@ input:checked+.slider:before {
 
     .bento-grid {
         grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .main-content {
+        padding: 12px;
+    }
+
+    .bento-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .bento-item {
+        padding: 12px;
+    }
+
+    .bento-value {
+        font-size: 1.2rem;
+    }
+
+    .input-table-row {
+        grid-template-columns: 1fr 1fr 1fr auto;
     }
 }

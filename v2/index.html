@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WOOD CUT PRO</title>
+    <title>대장간</title>
     <link rel="stylesheet" href="css/style.css">
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -15,7 +15,7 @@
     <div class="container">
         <!-- Minimalist Top Bar -->
         <header class="app-header">
-            <div class="logo">Wood Cut <span>PRO</span></div>
+            <div class="logo">대장간 <span>V3</span></div>
             <div class="header-actions">
                 <button class="btn btn-icon" id="toggleTheme" title="테마 변경">🌗</button>
             </div>
@@ -26,46 +26,58 @@
             <aside class="sidebar glass">
                 <div class="sidebar-content">
                     <section class="control-group">
-                        <h2 class="label">원판 규격</h2>
-                        <div class="input-row">
-                            <div class="field">
-                                <span>W</span>
-                                <input type="number" id="boardWidth" value="2440">
+                        <details>
+                            <summary>원판 규격 & 설정</summary>
+                            <div class="input-row mt-2">
+                                <div class="field">
+                                    <span>W</span>
+                                    <input type="number" id="boardWidth" value="2440">
+                                </div>
+                                <div class="field">
+                                    <span>H</span>
+                                    <input type="number" id="boardHeight" value="1220">
+                                </div>
                             </div>
-                            <div class="field">
-                                <span>H</span>
-                                <input type="number" id="boardHeight" value="1220">
+                            <div class="input-row mt-2">
+                                <div class="field">
+                                    <span
+                                        style="font-size: 0.7rem; color: var(--text-muted); margin-right: 5px;">T(mm)</span>
+                                    <input type="number" id="boardThickness" value="18">
+                                </div>
+                                <div class="field">
+                                    <span
+                                        style="font-size: 0.7rem; color: var(--text-muted); margin-right: 5px;">Kerf</span>
+                                    <input type="number" id="kerfInput" value="5">
+                                </div>
                             </div>
-                        </div>
-                        <div class="field mt-3">
-                            <span style="font-size: 0.7rem; color: var(--text-muted);">Kerf (mm)</span>
-                            <input type="number" id="kerfInput" value="5">
-                        </div>
+                            <label class="toggle-control mt-3">
+                                <input type="checkbox" id="preCutting">
+                                <span class="slider"></span>
+                                <span class="toggle-text">전단컷팅 (사방 12mm 소실)</span>
+                            </label>
+                        </details>
                     </section>
 
                     <section class="control-group">
-                        <h2 class="label">부품 추가</h2>
-                        <div class="input-row">
+                        <h2 class="label">절단 추가</h2>
+                        <div class="input-table-row">
                             <div class="field">
                                 <input type="number" id="partWidth" placeholder="가로">
                             </div>
                             <div class="field">
                                 <input type="number" id="partHeight" placeholder="세로">
                             </div>
-                        </div>
-                        <div class="field mt-2">
-                            <input type="number" id="partQty" value="1" placeholder="수량">
+                            <div class="field">
+                                <input type="number" id="partQty" value="1" placeholder="수량">
+                            </div>
+                            <button class="btn btn-add-inline" id="addPartBtn" title="추가">+</button>
                         </div>
 
                         <label class="toggle-control mt-3">
                             <input type="checkbox" id="partRotatable" checked>
                             <span class="slider"></span>
-                            <span class="toggle-text">회전 허용 (결방향 무관)</span>
+                            <span class="toggle-text">결방향 무관</span>
                         </label>
-
-                        <button class="btn btn-primary btn-full mt-4" id="addPartBtn">
-                            부품 리스트 추가
-                        </button>
                     </section>
 
                     <section class="control-group parts-list-section">
@@ -89,21 +101,21 @@
             <!-- Main Preview Area -->
             <div class="main-content">
                 <div class="view-tabs">
-                    <button class="tab-btn active" data-view="3d">3D Preview</button>
-                    <button class="tab-btn" data-view="2d">2D Drawing</button>
+                    <button class="tab-btn active" data-view="2d">2D Drawing</button>
+                    <button class="tab-btn" data-view="3d">3D Preview</button>
                 </div>
 
                 <div class="preview-container glass">
-                    <!-- 3D View -->
-                    <div id="threeContainer" class="view-item active"></div>
                     <!-- 2D View -->
-                    <div id="canvasContainer" class="view-item">
+                    <div id="canvasContainer" class="view-item active">
                         <canvas id="resultCanvas"></canvas>
                     </div>
+                    <!-- 3D View -->
+                    <div id="threeContainer" class="view-item"></div>
 
                     <!-- Placeholder for no results -->
                     <div id="emptyState" class="empty-state">
-                        <div class="icon">📦</div>
+                        <div class="icon">⚒️</div>
                         <h3>재단 데이터를 입력하세요</h3>
                         <p>사이드바에서 부품을 추가하고 최적화 버튼을 클릭하세요.</p>
                     </div>
@@ -122,6 +134,10 @@
                     <div class="bento-item glass">
                         <span class="bento-label">배치 완료</span>
                         <div class="bento-value" id="statPlaced">0/0</div>
+                    </div>
+                    <div class="bento-item glass">
+                        <span class="bento-label">예상 재단비용</span>
+                        <div class="bento-value" id="statCost">0원</div>
                     </div>
                     <div class="bento-item glass">
                         <span class="bento-label">사용 면적</span>

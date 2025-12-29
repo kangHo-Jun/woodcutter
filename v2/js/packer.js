@@ -13,7 +13,7 @@ class GuillotinePacker {
     /**
      * 모든 부품을 배치 (부품이 많으면 여러 원판 사용)
      * @param {Array} items - [{width, height, qty, id, rotatable}]
-     * @returns {Object} - {bins: [{placed, efficiency, usedArea, totalArea}], unplaced}
+     * @returns {Object} - {bins: [{placed, efficiency, usedArea, totalArea, cuttingCount}], unplaced}
      */
     pack(items) {
         // 부품을 수량만큼 펼치기
@@ -73,6 +73,8 @@ class SingleBin {
         this.kerf = kerf;
         this.freeRects = [{ x: 0, y: 0, width, height }];
         this.placed = [];
+        this.cutLinesX = new Set(); // Unique vertical cut lines
+        this.cutLinesY = new Set(); // Unique horizontal cut lines
     }
 
     pack(items) {
@@ -103,7 +105,8 @@ class SingleBin {
             unplaced,
             efficiency,
             usedArea,
-            totalArea
+            totalArea,
+            cuttingCount: this.cutLinesX.size + this.cutLinesY.size
         };
     }
 
@@ -117,7 +120,6 @@ class SingleBin {
             const rect = this.freeRects[i];
 
             // 톱날 두께(Kerf) 고려하여 배치 가능 확인
-            // 원판 가장자리와의 여유 공간을 위해 배치 크기에 kerf를 더함
             if (rect.width >= width + this.kerf && rect.height >= height + this.kerf) {
                 const shortSide = Math.min(rect.width - width, rect.height - height);
                 if (shortSide < bestShortSideFit) {
@@ -155,11 +157,23 @@ class SingleBin {
         const h = rect.height - uH;
 
         if (w <= h) {
-            if (w > 0) this.freeRects.push({ x: rect.x + uW, y: rect.y, width: w, height: uH });
-            if (h > 0) this.freeRects.push({ x: rect.x, y: rect.y + uH, width: rect.width, height: h });
+            if (w > 0) {
+                this.freeRects.push({ x: rect.x + uW, y: rect.y, width: w, height: uH });
+                this.cutLinesX.add(rect.x + uW);
+            }
+            if (h > 0) {
+                this.freeRects.push({ x: rect.x, y: rect.y + uH, width: rect.width, height: h });
+                this.cutLinesY.add(rect.y + uH);
+            }
         } else {
-            if (h > 0) this.freeRects.push({ x: rect.x, y: rect.y + uH, width: uW, height: h });
-            if (w > 0) this.freeRects.push({ x: rect.x + uW, y: rect.y, width: w, height: rect.height });
+            if (h > 0) {
+                this.freeRects.push({ x: rect.x, y: rect.y + uH, width: uW, height: h });
+                this.cutLinesY.add(rect.y + uH);
+            }
+            if (w > 0) {
+                this.freeRects.push({ x: rect.x + uW, y: rect.y, width: w, height: rect.height });
+                this.cutLinesX.add(rect.x + uW);
+            }
         }
         this.freeRects.splice(index, 1);
     }

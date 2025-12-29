@@ -1,5 +1,5 @@
 /**
- * 목재 재단 최적화 앱 메인 로직 (V3)
+ * 대장간 - 목재 재단 최적화 앱 메인 로직 (V3)
  */
 
 class CuttingApp {
@@ -8,6 +8,7 @@ class CuttingApp {
         this.renderer = null;
         this.threePreview = null;
         this.kerf = 5;
+        this.lastResult = null;
         this.init();
     }
 
@@ -19,6 +20,8 @@ class CuttingApp {
         // UI 요소
         this.boardWidth = document.getElementById('boardWidth');
         this.boardHeight = document.getElementById('boardHeight');
+        this.boardThickness = document.getElementById('boardThickness');
+        this.preCutting = document.getElementById('preCutting');
         this.partWidth = document.getElementById('partWidth');
         this.partHeight = document.getElementById('partHeight');
         this.partQty = document.getElementById('partQty');
@@ -31,6 +34,7 @@ class CuttingApp {
         this.statWaste = document.getElementById('statWaste');
         this.statPlaced = document.getElementById('statPlaced');
         this.statArea = document.getElementById('statArea');
+        this.statCost = document.getElementById('statCost');
 
         this.emptyState = document.getElementById('emptyState');
         this.actionsBar = document.getElementById('resultActions');
@@ -38,9 +42,10 @@ class CuttingApp {
         this.bindEvents();
 
         // 초기값 설정
-        this.boardWidth.value = 2440;
-        this.boardHeight.value = 1220;
-        this.kerfInput.value = this.kerf;
+        if (this.boardWidth) this.boardWidth.value = 2440;
+        if (this.boardHeight) this.boardHeight.value = 1220;
+        if (this.boardThickness) this.boardThickness.value = 18;
+        if (this.kerfInput) this.kerfInput.value = this.kerf;
     }
 
     bindEvents() {
@@ -50,19 +55,17 @@ class CuttingApp {
         document.getElementById('downloadPdfBtn').addEventListener('click', () => this.downloadPDF());
         document.getElementById('clearBtn').addEventListener('click', () => this.clearParts());
 
-        // Tab View Switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => this.switchView(e.target));
         });
 
-        // Enter 키로 부품 추가
         [this.partWidth, this.partHeight, this.partQty].forEach(el => {
+            if (!el) return;
             el.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') this.addPart();
             });
         });
 
-        // Theme Toggle
         const themeBtn = document.getElementById('toggleTheme');
         if (themeBtn) {
             themeBtn.addEventListener('click', () => {
@@ -78,16 +81,21 @@ class CuttingApp {
         const rotatable = this.partRotatable.checked;
 
         if (!width || !height || width <= 0 || height <= 0) {
-            this.showToast('부품 크기를 올바르게 입력하세요', 'error');
+            this.showToast('절단 크기를 올바르게 입력하세요', 'error');
             return;
         }
 
-        const boardW = parseInt(this.boardWidth.value);
-        const boardH = parseInt(this.boardHeight.value);
+        const rawW = parseInt(this.boardWidth.value);
+        const rawH = parseInt(this.boardHeight.value);
+        const isPreCut = this.preCutting.checked;
+
+        // 전단컷팅 적용 시 가용 크기 보정 (사방 12mm 소실)
+        const boardW = isPreCut ? rawW - 24 : rawW;
+        const boardH = isPreCut ? rawH - 24 : rawH;
 
         if (width > boardW || height > boardH) {
             if (!rotatable || (height > boardW || width > boardH)) {
-                this.showToast('부품이 원판보다 큽니다', 'error');
+                this.showToast(isPreCut ? '절단 부위가 전단컷팅 적용 후 원판보다 큽니다' : '절단 부위가 원판보다 큽니다', 'error');
                 return;
             }
         }
@@ -95,11 +103,9 @@ class CuttingApp {
         this.parts.push({ width, height, qty, rotatable, id: this.parts.length });
         this.renderPartsList();
 
-        // 입력 필드 초기화
         this.partWidth.value = '';
         this.partHeight.value = '';
         this.partQty.value = '1';
-        this.partRotatable.checked = true;
         this.partWidth.focus();
 
         this.showToast(`${width}×${height} (${qty}개) 추가됨`, 'success');
@@ -115,14 +121,12 @@ class CuttingApp {
         this.renderPartsList();
         if (this.emptyState) this.emptyState.style.display = 'block';
         if (this.actionsBar) this.actionsBar.style.display = 'none';
-
-        // 캔버스 및 3D 초기화 (빈 상태로 렌더)
-        this.displayResults({ placed: [], unplaced: [], efficiency: 0, usedArea: 0 });
+        this.displayResults({ bins: [], unplaced: [], totalEfficiency: 0 });
     }
 
     renderPartsList() {
         if (this.parts.length === 0) {
-            this.partsListEl.innerHTML = '<span class="empty-msg" style="color:var(--text-muted); font-size:0.8rem;">부품을 추가하세요</span>';
+            this.partsListEl.innerHTML = '<span class="empty-msg" style="color:var(--text-muted); font-size:0.8rem;">항목을 추가하세요</span>';
             return;
         }
 
@@ -143,57 +147,84 @@ class CuttingApp {
         return colors[index % colors.length];
     }
 
+    /**
+     * GitHub (kangHo-Jun/wood-cutter) 원본 로직 기반 재단비용 계산
+     * - 12mm 이하: 1,000원/컷
+     * - 13~23mm: 1,500원/컷
+     * - 24mm 이상: 2,000원/컷
+     * - 전단컷팅은 크기에만 영향, 컷팅 횟수에 추가 가산 없음
+     */
+    calculateCuttingCost(thickness, totalCuts, isPreCut, binCount) {
+        let perCutPrice;
+        if (thickness <= 12) perCutPrice = 1000;
+        else if (thickness <= 23) perCutPrice = 1500;
+        else perCutPrice = 2000;
+
+        // 전단컷팅은 원판 크기에만 영향 (calculate()에서 처리)
+        // 컷팅 횟수에는 추가 가산 없음
+        return totalCuts * perCutPrice;
+    }
+
     calculate() {
         if (this.parts.length === 0) {
-            this.showToast('부품을 먼저 추가하세요', 'error');
+            this.showToast('항목을 먼저 추가하세요', 'error');
             return;
         }
 
-        const boardW = parseInt(this.boardWidth.value);
-        const boardH = parseInt(this.boardHeight.value);
+        const rawW = parseInt(this.boardWidth.value);
+        const rawH = parseInt(this.boardHeight.value);
+        const thickness = parseInt(this.boardThickness.value) || 18;
         const kerf = parseInt(this.kerfInput.value) || 0;
+        const isPreCut = this.preCutting.checked;
 
-        if (!boardW || !boardH) {
+        if (!rawW || !rawH) {
             this.showToast('원판 크기를 입력하세요', 'error');
             return;
         }
 
-        // Packer 실행 (다중 원판 지원)
+        // 전단컷팅 적용 시 내부 가용 영역 계산
+        const boardW = isPreCut ? rawW - 24 : rawW;
+        const boardH = isPreCut ? rawH - 24 : rawH;
+
         const packer = new GuillotinePacker(boardW, boardH, kerf);
         const result = packer.pack(this.parts);
 
-        // 결과 데이터 보관 (PDF 등에서 사용)
-        this.lastResult = result;
+        // 총 재단 비용 계산 (모든 원판의 컷팅 수 합산 + 전단컷팅 보정)
+        const totalCuts = result.bins.reduce((sum, b) => sum + b.cuttingCount, 0);
+        const binCount = result.bins.length;
+        result.totalCost = this.calculateCuttingCost(thickness, totalCuts, isPreCut, binCount);
+        result.totalCuts = totalCuts;
+        result.boardW = rawW;
+        result.boardH = rawH;
 
-        // 결과 표시
+        this.lastResult = result;
         this.displayResults(result);
 
         if (result.unplaced.length > 0) {
-            this.showToast(`⚠️ ${result.unplaced.length}개 부품 배치 불가 (원판보다 큼)`, 'warning');
+            this.showToast(`⚠️ ${result.unplaced.length}개 항목 배치 불가`, 'warning');
         } else {
-            this.showToast(`✓ 최적화 완료! (총 ${result.bins.length}개 원판 사용)`, 'success');
+            this.showToast(`✓ 최적화 완료! (비용: ${result.totalCost.toLocaleString()}원)`, 'success');
         }
     }
 
     displayResults(result) {
-        const boardW = parseInt(this.boardWidth.value) || 0;
-        const boardH = parseInt(this.boardHeight.value) || 0;
+        const boardW = result.boardW || parseInt(this.boardWidth.value) || 0;
+        const boardH = result.boardH || parseInt(this.boardHeight.value) || 0;
         const kerf = parseInt(this.kerfInput.value) || 0;
 
         const container = document.getElementById('canvasContainer');
-        container.innerHTML = ''; // 기존 캔버스 제거
+        container.innerHTML = '';
 
-        const hasPlaced = result.bins.length > 0;
+        const hasPlaced = result.bins && result.bins.length > 0;
         if (this.emptyState) this.emptyState.style.display = hasPlaced ? 'none' : 'block';
         if (this.actionsBar) this.actionsBar.style.display = hasPlaced ? 'flex' : 'none';
 
         if (!hasPlaced) return;
 
-        // 각 원판(Bin) 별로 캔버스 생성 및 렌더링
         result.bins.forEach((bin, idx) => {
             const wrapper = document.createElement('div');
             wrapper.className = 'board-result-wrapper';
-            wrapper.innerHTML = `<h4 class="board-title">Sheet ${idx + 1} (${bin.efficiency.toFixed(1)}%)</h4>`;
+            wrapper.innerHTML = `<h4 class="board-title">Sheet ${idx + 1} (${bin.efficiency.toFixed(1)}%) - Cuts: ${bin.cuttingCount}</h4>`;
 
             const canvas = document.createElement('canvas');
             canvas.id = `resultCanvas-${idx}`;
@@ -201,10 +232,13 @@ class CuttingApp {
             container.appendChild(wrapper);
 
             const renderer = new CuttingRenderer(canvas.id);
+            // 렌더링 시에는 원본 크기(boardW, boardH)를 전달하되 
+            // 배치된 좌표는 이미 전단컷팅 보정(사방 12mm)이 필요할 수 있으나 
+            // 여기서는 배치 알고리즘이 줄어든 크기에서 작동했으므로 여백 표현 필요 시 추가 보정 가능
+            // 일단은 줄어든 가용 영역 기준으로 렌더링 (V1 방식과 대포 동소문)
             renderer.render(boardW, boardH, bin.placed, kerf);
         });
 
-        // 3D Preview - 첫 번째 원판만 우선 표시 (또는 전체를 보여줄 엔진 고도화 필요)
         const firstBin = result.bins[0];
         const placedWithColor = firstBin.placed.map(item => ({
             ...item,
@@ -212,7 +246,6 @@ class CuttingApp {
         }));
         this.threePreview.update(boardW, boardH, placedWithColor);
 
-        // Bento Stats 업데이트 (전체 효율 기준)
         this.statEfficiency.innerText = `${result.totalEfficiency.toFixed(1)}%`;
         this.statWaste.innerText = `${(100 - result.totalEfficiency).toFixed(1)}%`;
         const totalPlaced = result.bins.reduce((sum, b) => sum + b.placed.length, 0);
@@ -220,15 +253,14 @@ class CuttingApp {
         this.statPlaced.innerText = `${totalPlaced}/${totalRequested}`;
         const totalUsedArea = result.bins.reduce((sum, b) => sum + b.usedArea, 0);
         this.statArea.innerText = `${(totalUsedArea / 1000000).toFixed(2)} m²`;
+        this.statCost.innerText = `${result.totalCost.toLocaleString()}원`;
     }
 
     switchView(btn) {
         const view = btn.dataset.view;
-        // 탭 상태 업데이트
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
-        // 뷰 가시성 업데이트
         document.querySelectorAll('.view-item').forEach(v => v.classList.remove('active'));
         if (view === '3d') {
             document.getElementById('threeContainer').classList.add('active');
@@ -238,8 +270,14 @@ class CuttingApp {
     }
 
     download() {
-        this.renderer.downloadImage();
-        this.showToast('이미지 다운로드 시작', 'success');
+        // 첫 번째 캔버스 기준 다운로드
+        const canvas = document.querySelector('#canvasContainer canvas');
+        if (canvas) {
+            const link = document.createElement('a');
+            link.download = `woodcut-result-${Date.now()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
     }
 
     downloadPDF() {
@@ -256,31 +294,25 @@ class CuttingApp {
     generatePDF() {
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('landscape', 'mm', 'a4');
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-
         const primaryColor = [29, 29, 31];
         const textColor = [29, 29, 31];
-        const mutedColor = [134, 134, 139];
 
         const result = this.lastResult;
         if (!result || !result.bins || result.bins.length === 0) {
-            this.showToast('출력할 결과가 없습니다. 최적화를 먼저 실행하세요.', 'error');
+            this.showToast('출력할 결과가 없습니다', 'error');
             return;
         }
 
-        // --- PAGE 1 ~ N: Drawings for each Sheet ---
         result.bins.forEach((bin, index) => {
             if (index > 0) pdf.addPage('landscape', 'mm', 'a4');
             this.drawPDFPage(pdf, bin, index);
         });
 
-        // --- FINAL PAGE(S): Detailed Parts Total Summary ---
         pdf.addPage('landscape', 'mm', 'a4');
         this.drawPDFTablePage(pdf, result, primaryColor, textColor);
 
         pdf.save(`woodcut-pro-report-${Date.now()}.pdf`);
-        this.showToast('전체 원판 포함 다중 페이지 리포트 발행 완료', 'success');
+        this.showToast('재단 비용 포함 PDF 리포트 발행 완료', 'success');
     }
 
     drawPDFPage(pdf, bin, index) {
@@ -290,48 +322,36 @@ class CuttingApp {
         const textColor = [29, 29, 31];
         const mutedColor = [134, 134, 139];
 
-        // Header
         pdf.setFillColor(...primaryColor);
         pdf.rect(0, 0, pageWidth, 25, 'F');
         pdf.setTextColor(255, 255, 255);
         pdf.setFontSize(18);
-        pdf.text(`WOOD CUT PRO REPORT - SHEET ${index + 1}`, 15, 17);
+        pdf.text(`대장간 리포트 - SHEET ${index + 1}`, 15, 17);
 
-        // Date
         pdf.setFontSize(9);
-        const date = new Date().toLocaleString();
-        pdf.text(`ISSUED: ${date}`, pageWidth - 15, 17, { align: 'right' });
+        pdf.text(`ISSUED: ${new Date().toLocaleString()}`, pageWidth - 15, 17, { align: 'right' });
 
-        // Info
         pdf.setTextColor(...textColor);
         pdf.setFontSize(12);
-        const boardW = this.boardWidth.value;
-        const boardH = this.boardHeight.value;
-        pdf.text(`Board: ${boardW} x ${boardH} mm | Sheet Efficiency: ${bin.efficiency.toFixed(1)}%`, 15, 35);
+        pdf.text(`Board: ${this.boardWidth.value}x${this.boardHeight.value}x${this.boardThickness.value}T | Pre-cut: ${this.preCutting.checked ? 'Yes' : 'No'}`, 15, 35);
 
-        // Canvas Image for ONLY this bin
         const canvas = document.getElementById(`resultCanvas-${index}`);
         if (canvas) {
             const imgData = canvas.toDataURL('image/png');
-            const margin = 15;
-            const maxImgW = pageWidth - margin * 2;
-            const maxImgH = pageHeight - 60; // Slightly larger space for images
-
+            const maxImgW = pageWidth - 30;
+            const maxImgH = pageHeight - 65;
             let imgW = maxImgW;
             let imgH = (canvas.height / canvas.width) * imgW;
             if (imgH > maxImgH) {
                 imgH = maxImgH;
                 imgW = (canvas.width / canvas.height) * imgH;
             }
-
-            const imgX = (pageWidth - imgW) / 2;
-            pdf.addImage(imgData, 'PNG', imgX, 40, imgW, imgH);
+            pdf.addImage(imgData, 'PNG', (pageWidth - imgW) / 2, 45, imgW, imgH);
         }
 
-        // Mini Stats at bottom
         pdf.setTextColor(...mutedColor);
         pdf.setFontSize(9);
-        pdf.text(`Sheet ${index + 1} / ${this.lastResult.bins.length} | Generated by Wood Cut PRO`, 15, pageHeight - 10);
+        pdf.text(`Sheet ${index + 1} / ${this.lastResult.bins.length} | Generated by 대장간`, 15, pageHeight - 10);
     }
 
     drawPDFTablePage(pdf, result, primaryColor, textColor) {
@@ -342,17 +362,16 @@ class CuttingApp {
         pdf.rect(0, 0, pageWidth, 20, 'F');
         pdf.setTextColor(255, 255, 255);
         pdf.setFontSize(14);
-        pdf.text('Detailed Cutting List (Total Summary)', 15, 13);
+        pdf.text('Detailed Cutting List & Cost Summary', 15, 13);
 
         pdf.setTextColor(...textColor);
         pdf.setFontSize(10);
         let curY = 35;
         const colW = [20, 40, 40, 30, 30, 40];
-        const headers = ['#', 'Width (mm)', 'Height (mm)', 'Qty', 'Rotatable', 'Total Area'];
+        const headers = ['#', 'Width (mm)', 'Height (mm)', 'Qty', 'Rotatable', 'Area (m²)'];
 
         pdf.setFillColor(245, 245, 247);
         pdf.rect(15, curY - 5, pageWidth - 30, 7, 'F');
-
         let curX = 15;
         headers.forEach((h, i) => {
             pdf.text(h, curX, curY);
@@ -360,56 +379,52 @@ class CuttingApp {
         });
 
         curY += 10;
-
-        // Use this.parts (original requested items) for the table
         this.parts.forEach((p, idx) => {
-            if (curY > pageHeight - 20) {
+            if (curY > pageHeight - 60) {
                 pdf.addPage('landscape', 'mm', 'a4');
                 curY = 30;
-                // Add header for continuation
                 pdf.setFillColor(...primaryColor);
                 pdf.rect(0, 0, pageWidth, 15, 'F');
                 pdf.setTextColor(255, 255, 255);
                 pdf.text('Detailed Cutting List (Continued)', 15, 10);
                 pdf.setTextColor(...textColor);
             }
-
             curX = 15;
             pdf.text((idx + 1).toString(), curX, curY); curX += colW[0];
             pdf.text(p.width.toString(), curX, curY); curX += colW[1];
             pdf.text(p.height.toString(), curX, curY); curX += colW[2];
             pdf.text(p.qty.toString(), curX, curY); curX += colW[3];
             pdf.text(p.rotatable ? 'Yes' : 'No', curX, curY); curX += colW[4];
-            const area = (p.width * p.height * p.qty / 1000000).toFixed(3);
-            pdf.text(`${area} m²`, curX, curY);
-
-            pdf.setDrawColor(240, 240, 242);
+            pdf.text((p.width * p.height * p.qty / 1000000).toFixed(3), curX, curY);
             pdf.line(15, curY + 2, pageWidth - 15, curY + 2);
             curY += 8;
         });
 
-        // Summary Statistics Box
+        // Financial Summary
         curY += 10;
         pdf.setFillColor(248, 249, 250);
-        pdf.rect(15, curY, pageWidth - 30, 25, 'F');
+        pdf.rect(15, curY, pageWidth - 30, 35, 'F');
         pdf.setTextColor(...textColor);
-        pdf.setFontSize(12);
-        pdf.text('Project Stats:', 20, curY + 10);
+        pdf.setFontSize(11);
+        pdf.text('Calculation Details:', 20, curY + 10);
         pdf.setFontSize(10);
-        pdf.text(`Total Sheets: ${result.bins.length}`, 20, curY + 18);
-        pdf.text(`Total Efficiency: ${result.totalEfficiency.toFixed(1)}%`, 70, curY + 18);
-        pdf.text(`Total Used Area: ${this.statArea.innerText}`, 140, curY + 18);
+        pdf.text(`- Thickness: ${this.boardThickness.value}T`, 20, curY + 18);
+        pdf.text(`- Pre-cutting: ${this.preCutting.checked ? 'Enabled (+4 cuts, -12mm margin)' : 'Disabled'}`, 20, curY + 25);
+        pdf.text(`- Total Cutting Count: ${result.totalCuts} cuts`, 100, curY + 18);
+        pdf.text(`- Efficiency Score: ${result.totalEfficiency.toFixed(1)}%`, 100, curY + 25);
+
+        pdf.setFontSize(14);
+        pdf.setTextColor(0, 122, 255);
+        pdf.text(`TOTAL EST. COST: ${result.totalCost.toLocaleString()} KRW`, pageWidth - 25, curY + 20, { align: 'right' });
     }
 
     showToast(message, type = 'info') {
         const existing = document.querySelector('.toast');
         if (existing) existing.remove();
-
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
         toast.textContent = message;
         document.body.appendChild(toast);
-
         setTimeout(() => toast.classList.add('show'), 10);
         setTimeout(() => {
             toast.classList.remove('show');
@@ -418,8 +433,5 @@ class CuttingApp {
     }
 }
 
-// 앱 인스턴스
 let app;
-document.addEventListener('DOMContentLoaded', () => {
-    app = new CuttingApp();
-});
+document.addEventListener('DOMContentLoaded', () => { app = new CuttingApp(); });
