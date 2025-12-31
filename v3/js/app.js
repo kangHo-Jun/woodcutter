@@ -297,17 +297,7 @@ class CuttingAppMobile {
     }
 
     // Step 1: Logic
-    toggleGrainStep1() {
-        this.useGrain = !this.useGrain;
-        const checkbox = document.getElementById('grainCheckboxStep1');
-        if (checkbox) checkbox.checked = this.useGrain;
-
-        // Sync with Step 2 grain if applicable
-        const step2Checkbox = document.getElementById('useGrain');
-        if (step2Checkbox) step2Checkbox.checked = this.useGrain;
-
-        this.haptic('light');
-    }
+    // Unified Grain Logic handled in Step 2 or via helper
 
     updateStep1Preview() {
         // No-op after revision
@@ -760,6 +750,45 @@ class CuttingAppMobile {
         if (toast) toast.remove();
 
         this.showToast('되돌렸습니다', 'success');
+    }
+
+    resetApp() {
+        if (!confirm('초기화하시겠습니까? 모든 데이터가 삭제됩니다.')) return;
+
+        // Reset Data
+        this.parts = [];
+        this.currentStep = 1;
+        this.currentField = 'boardWidth';
+        this.currentBoardIndex = 0;
+        this.lastResult = null;
+        this.inputValues = {
+            boardWidth: '2440',
+            boardHeight: '1220',
+            boardThickness: '18',
+            kerf: '3',
+            width: '',
+            height: '',
+            qty: '1'
+        };
+
+        // Reset Inputs
+        const inputs = ['boardWidth', 'boardHeight', 'boardThickness', 'kerfInput'];
+        inputs.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = this.inputValues[id.replace('Input', '') || id];
+        });
+
+        // Reset Displays
+        this.updateSettingsSummary();
+        this.renderPartsList();
+
+        // Reset Grain
+        this.useGrain = false;
+        this.updateGrainUI();
+
+        // Navigate Home
+        this.goToStep(1);
+        this.showToast('초기화되었습니다');
     }
 
     clearParts() {
