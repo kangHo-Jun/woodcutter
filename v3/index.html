@@ -195,25 +195,20 @@
                 </div>
 
                 <div class="result-inner">
+                    <div class="board-top-label" id="dispTopWidth">2440mm</div>
+
                     <div class="result-canvas-wrapper">
                         <canvas id="resultCanvas"></canvas>
                     </div>
 
-                    <!-- Consolidate Dimensions & Pagination in One Row -->
-                    <div class="result-controls-row">
-                        <div class="dim-box" id="dispWidth">2440mm</div>
-
+                    <!-- Consolidated Pagination Only -->
+                    <div class="result-controls-row compact-row">
                         <div class="canvas-controls">
                             <button class="canvas-ctrl" id="prevBoard">◀</button>
                             <span class="board-indicator" id="boardIndicator">1/1</span>
                             <button class="canvas-ctrl" id="nextBoard">▶</button>
                         </div>
-
-                        <div class="dim-box" id="dispHeight">1220mm</div>
                     </div>
-
-                    <!-- UI2: Legend for small parts -->
-                    <div class="legend-section" id="legendSection"></div>
                 </div>
             </div>
 

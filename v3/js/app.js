@@ -851,10 +851,9 @@ class CuttingAppMobile {
         document.getElementById('statBoards').textContent = result.bins.length + '장';
 
         // Update Step 3 Display Dimensions
-        const dWidth = document.getElementById('dispWidth');
-        const dHeight = document.getElementById('dispHeight');
-        if (dWidth) dWidth.textContent = boardW + 'mm';
-        if (dHeight) dHeight.textContent = boardH + 'mm';
+        // Update Step 3 Display Dimensions
+        const dTopWidth = document.getElementById('dispTopWidth');
+        if (dTopWidth) dTopWidth.textContent = boardW + 'mm';
 
         // Render canvas
         this.renderResult();
