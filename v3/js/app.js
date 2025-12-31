@@ -1133,33 +1133,6 @@ ${partsList}
     // ============================================
 
     resetApp() {
-        this.parts = [];
-        this.inputValues = {
-            boardWidth: '2440',
-            boardHeight: '1220',
-            boardThickness: '18',
-            kerf: '3',
-            width: '',
-            height: '',
-            qty: '1'
-        };
-        this.useGrain = false;
-        this.lastResult = null;
-
-        // Update Step 1 Displays
-        this.updateInputField('boardWidth', '2440');
-        this.updateInputField('boardHeight', '1220');
-        this.updateInputField('boardThickness', '18');
-        this.updateInputField('kerf', '3');
-
-        // Reset Toggles
-        const preCutCb = document.getElementById('preCutting');
-        if (preCutCb) preCutCb.checked = false;
-        const grainCb = document.getElementById('grainCheckboxStep1');
-        if (grainCb) grainCb.checked = false;
-        this.updateGrainUI();
-
-        // Clear Step 2 UI
         this.renderPartsList();
         this.resetInputFields();
 
