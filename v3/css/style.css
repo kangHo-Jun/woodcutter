@@ -156,34 +156,36 @@ body {
     vertical-align: middle;
 }
 
-/* Step Indicator */
-.step-indicator {
+/* Global Navigation */
+.global-nav {
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
+    gap: var(--space-lg);
 }
 
-.step {
-    font-size: 12px;
+.nav-item {
+    font-size: 14px;
     font-weight: 600;
     color: var(--text-dim);
-    transition: color 0.3s;
+    transition: all 0.2s;
     cursor: pointer;
+    position: relative;
+    padding: 4px 0;
 }
 
-.step.active {
+.nav-item.active {
     color: var(--primary);
 }
 
-.step.done {
-    color: var(--text-muted);
-}
-
-.step-dot {
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: var(--text-dim);
+.nav-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--primary);
+    border-radius: 2px;
 }
 
 /* ============================================
@@ -192,7 +194,7 @@ body {
 
 .screen {
     position: absolute;
-    top: 56px;
+    top: 8vh;
     left: 0;
     right: 0;
     bottom: 0;
@@ -225,10 +227,26 @@ body {
     overflow-y: auto;
 }
 
+.screen-intro {
+    text-align: center;
+    margin-top: var(--space-sm);
+    margin-bottom: var(--space-xl);
+}
+
+.screen-intro .screen-title {
+    margin-bottom: var(--space-xs);
+    text-align: center;
+}
+
+.section-subtitle {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: var(--font-sm);
+}
+
 .screen-title {
     font-size: var(--font-xl);
     font-weight: 700;
-    margin-bottom: var(--space-lg);
     letter-spacing: -0.02em;
 }
 
@@ -238,6 +256,7 @@ body {
     background: var(--bg-card);
     border-top: 1px solid var(--border);
     flex-shrink: 0;
+    z-index: 100;
 }
 
 .screen-footer.dual {
@@ -585,10 +604,206 @@ body {
     line-height: 1;
 }
 
-.box-unit {
-    font-size: 10px;
+.input-box-compact.qty-box {
+    flex: 1.5;
+}
+
+/* Oversize Validation v4 */
+.input-box-compact.warning {
+    border-color: var(--danger);
+}
+
+.input-box-compact.warning .box-value {
+    color: var(--danger);
+}
+
+.input-box-compact.warning .box-label {
+    color: var(--danger);
+}
+
+.warning-text {
+    position: absolute;
+    bottom: -14px;
+    left: 0;
+    right: 0;
+    font-size: 9px;
+    color: var(--danger);
+    font-weight: 600;
+    white-space: nowrap;
+    text-align: center;
+}
+
+/* Compact Grain Toggle Step 2 */
+.config-toggle-compact {
+    flex: 1;
+    height: 100%;
+    background: #333;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.config-toggle-compact.active {
+    border-color: var(--primary);
+    background: rgba(0, 212, 170, 0.1);
+}
+
+.toggle-icon-mini {
+    font-size: 14px;
+    font-weight: 800;
     color: var(--text-dim);
-    margin-left: 2px;
+}
+
+.config-toggle-compact.active .toggle-icon-mini {
+    color: var(--primary);
+}
+
+.btn-add-compact {
+    flex: 2;
+    height: 100%;
+    background: var(--primary);
+    color: var(--bg-main);
+    border-radius: 12px;
+    border: none;
+    font-weight: 800;
+    font-size: 16px;
+}
+
+.input-separator-x {
+    font-size: 20px;
+    color: var(--text-dim);
+    margin: 0 var(--space-sm);
+    padding-top: 20px;
+}
+
+.field-value-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+/* Config Toggle (Step 1 Grain) */
+.config-toggle-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    margin-bottom: var(--space-lg);
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.config-toggle-item:active {
+    border-color: var(--primary);
+}
+
+.toggle-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.toggle-icon {
+    font-size: 24px;
+}
+
+.toggle-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.toggle-title {
+    font-weight: 600;
+    font-size: var(--font-base);
+}
+
+.toggle-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+}
+
+/* Custom Toggle Switch */
+.toggle-switch-wrap {
+    position: relative;
+    width: 48px;
+    height: 24px;
+}
+
+.hidden-checkbox {
+    display: none;
+}
+
+.custom-toggle {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-input);
+    border-radius: var(--radius-full);
+    position: relative;
+    transition: background 0.3s;
+}
+
+.custom-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: #FFF;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+.hidden-checkbox:checked+.custom-toggle {
+    background: var(--primary);
+}
+
+.hidden-checkbox:checked+.custom-toggle::after {
+    transform: translateX(24px);
+}
+
+/* Board Preview Area */
+.board-preview-area {
+    aspect-ratio: 16 / 9;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--space-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+.preview-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-sm);
+    color: var(--text-dim);
+    opacity: 0.5;
+}
+
+.placeholder-icon {
+    font-size: 32px;
+}
+
+.placeholder-text {
+    font-size: 12px;
+}
+
+#step1PreviewCanvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .vertical-stepper {
@@ -1017,27 +1232,20 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-md);
-    background-image: linear-gradient(0deg, rgba(139, 69, 19, 0.05) 1px, transparent 1px);
-    background-size: 100% 20px;
-}
-
-.board-label {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-dim);
-    margin-bottom: var(--space-sm);
+    padding: 0 var(--space-md);
+    overflow: hidden;
 }
 
 .result-canvas-wrapper {
-    width: 100%;
-    max-width: 90vw;
+    flex: 1;
     background: transparent;
+    border-radius: var(--radius-lg);
     display: flex;
-    flex-direction: column;
     align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    min-height: 250px;
 }
 
 #resultCanvas {
@@ -1046,23 +1254,11 @@ body {
     filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.15));
 }
 
-.efficiency-text {
-    margin-top: var(--space-lg);
-    font-size: 14px;
-    font-weight: 600;
-}
-
 .efficiency-val {
     color: #00D4AA;
 }
 
 /* UI2: Zoom Controls */
-.result-canvas-wrapper {
-    position: relative;
-    overflow: hidden;
-    cursor: grab;
-}
-
 .result-canvas-wrapper:active {
     cursor: grabbing;
 }
@@ -1135,8 +1331,9 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: var(--space-xl);
-    margin-top: var(--space-xl);
+    gap: var(--space-lg);
+    margin-top: var(--space-md);
+    margin-bottom: var(--space-md);
 }
 
 .canvas-ctrl {
@@ -1406,72 +1603,62 @@ input:checked+.toggle-slider:before {
 
 .pdf-modal-content {
     flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    position: relative;
-    padding: var(--space-md);
+    overflow-y: auto;
+    padding: var(--space-lg);
+    -webkit-overflow-scrolling: touch;
 }
 
-.pdf-preview-wrapper {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    touch-action: none;
-}
-
-#pdfPreviewCanvas {
-    max-width: 100%;
-    max-height: 100%;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
-}
-
-.pdf-paging-controls {
-    padding: var(--space-md) var(--space-lg);
+.pdf-preview-list {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    background: rgba(0, 0, 0, 0.4);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    gap: var(--space-xl);
+    padding-bottom: 40px;
 }
 
-.pdf-paging-controls .canvas-controls {
-    background: transparent;
-    padding: 0;
-    gap: 20px;
+.pdf-board-container {
+    width: 100%;
+    max-width: 600px;
+    background: white;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    position: relative;
+    border-radius: 4px;
+    overflow: hidden;
 }
 
-.pdf-paging-controls .board-indicator {
+.pdf-board-container canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.pdf-board-label {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.6);
     color: white;
-    font-size: 18px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
     font-weight: 700;
-    min-width: 60px;
-    text-align: center;
 }
 
-.pdf-paging-controls .nav-btn {
-    width: 44px;
-    height: 44px;
-    color: white;
-    border-color: rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
+.pdf-modal-footer {
+    padding: var(--space-md);
+    padding-bottom: calc(var(--space-md) + var(--safe-bottom));
+    background: #1A1A1A;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 100;
+}
+
+.pdf-actions-row {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    gap: var(--space-md);
 }
 
-.efficiency-tag {
-    font-size: 14px;
-    color: var(--primary);
-    font-weight: 600;
-    background: rgba(0, 212, 170, 0.1);
-    padding: 4px 12px;
-    border-radius: 20px;
+.btn-flex {
+    flex: 1;
 }
 
 .pdf-close-btn {
