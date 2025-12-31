@@ -1758,63 +1758,83 @@ input:checked+.toggle-slider:before {
 
 /* UI4 Optimization: Maximize Canvas Area */
 
-/* 1. Reduce top spacing for result inner */
+/* 1. Remove all padding from result inner to delete Area A/B gaps */
 .result-inner {
-    padding: var(--space-xs) 0 !important;
+    padding: 0 !important;
     display: flex;
     flex-direction: column;
     height: 100%;
     overflow: hidden;
+    position: relative;
+    /* Ensure containment */
 }
 
-/* 2. Style the new Top Width Label */
-.board-top-label {
-    text-align: center;
-    font-size: var(--font-lg);
-    font-weight: 700;
-    color: var(--primary);
-    /* Highlighted color */
-    margin-bottom: var(--space-xs);
-    flex-shrink: 0;
-}
+/* 2. Removed Top Label Styles (HTML is gone) */
+/* .board-top-label rules deleted */
 
-/* 3. Maximize Canvas Wrapper */
+/* 3. Maximize Canvas Wrapper & Fix Overlap */
 .result-canvas-wrapper {
     flex-grow: 1;
     margin: 0 !important;
-    border-radius: var(--radius-sm);
+    padding: 0 !important;
+    /* Zero padding as requested */
+    border-radius: 0;
+    /* Remove radius for full edge-to-edge if needed, but keeping small radius is nicer? User said maximize. Let's keep small radius or 0. */
     background: transparent;
     display: flex;
     align-items: center;
-    /* Center canvas vertically */
     justify-content: center;
     overflow: hidden;
+    width: 100%;
+}
+
+/* CRITICAL: Protect Canvas from growing too large */
+#resultCanvas {
+    width: auto !important;
+    /* Let aspect ratio decide */
+    height: auto !important;
+    max-width: 100%;
+    /* Constrain width */
+    max-height: 100%;
+    /* Constrain height */
+    object-fit: contain;
 }
 
 /* 4. Compact Control Row (Area B minimized) */
 .result-controls-row.compact-row {
-    padding: var(--space-xs) var(--space-md);
-    margin-top: var(--space-xs);
+    padding: 4px 0 !important;
+    /* Minimal padding */
+    margin: 0 !important;
+    /* No margin */
     flex-shrink: 0;
+    min-height: 32px;
+    /* Minimal height */
+    justify-content: center;
+    /* Center the pagination */
+    background: var(--bg-card);
+    /* Give it a background to differentiate from canvas? User schematic had it integral. Transparent is fine if canvas doesn't overlap. Let's try transparent. */
     background: transparent;
-    /* Remove background if any */
-    border: none;
-    min-height: auto;
+    z-index: 10;
+    /* Ensure controls are above canvas if overlap occurs */
 }
 
 /* 5. Smaller Canvas Controls */
 .result-controls-row.compact-row .canvas-ctrl {
-    width: 40px;
-    height: 40px;
-    font-size: var(--font-md);
+    width: 32px;
+    /* Smaller thumb-friendly targets */
+    height: 32px;
+    font-size: 14px;
+    background: transparent;
+    color: var(--text-main);
 }
 
 .result-controls-row.compact-row .board-indicator {
-    font-size: var(--font-md);
-    margin: 0 var(--space-md);
+    font-size: 14px;
+    margin: 0 12px;
+    font-weight: normal;
+    color: var(--text-dim);
 }
 
-/* Hide Legend if somehow still rendered */
 .legend-section {
     display: none !important;
 }
