@@ -6,7 +6,7 @@ class CuttingRenderer {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext('2d');
-        this.padding = 40;
+        this.padding = 10; // Reduced for V4 maximize layout
         this.colors = [
             '#4ECDC4', '#FF6B6B', '#45B7D1', '#96CEB4',
             '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F',
@@ -82,7 +82,8 @@ class CuttingRenderer {
         });
 
         // 치수 표시
-        this.drawDimensions(binWidth, binHeight, drawScale);
+        // V4: Removed dimension drawing - show via toast on tap instead
+        // this.drawDimensions(binWidth, binHeight, drawScale);
 
         this.ctx.restore();
 
