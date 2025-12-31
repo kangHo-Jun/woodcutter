@@ -2,16 +2,28 @@
  * 대장간 V3 - Mobile-First App Logic
  */
 
+/* Removed WheelSelector class */
+
 class CuttingAppMobile {
     constructor() {
         this.currentStep = 1;
+        this.currentField = 'boardWidth'; // Start with board width
+        this.inputValues = {
+            boardWidth: '2400',
+            boardHeight: '1220',
+            width: '',
+            height: '',
+            qty: '1'
+        };
         this.parts = [];
-        this.currentField = 'width';
-        this.inputValues = { width: '', height: '', qty: '1' };
-        this.kerf = 5;
-        this.lastResult = null;
+        this.currentStep = 1;
+        this.currentField = 'boardWidth';
         this.currentBoardIndex = 0;
+        this.pdfCurrentBoardIndex = 0;
+        this.lastResult = null;
+        this.kerf = 2; // Default kerf
         this.renderer = null;
+        this.pdfRenderer = null;
         this.init();
     }
 
@@ -20,25 +32,55 @@ class CuttingAppMobile {
         this.updateStepIndicator();
     }
 
+
     bindEvents() {
-        // Step Navigation
+        // Logo Navigation (Go to Step 1)
+        document.querySelector('.logo')?.addEventListener('click', () => this.goToStep(1));
+
+        // Step Tab Navigation
+        document.querySelectorAll('.step-indicator .step').forEach(step => {
+            step.addEventListener('click', (e) => {
+                const targetStep = parseInt(e.currentTarget.dataset.step);
+                if (targetStep === 3 && this.parts.length === 0) {
+                    this.showToast('부품을 먼저 추가해주세요', 'error');
+                    return;
+                }
+                this.goToStep(targetStep);
+            });
+        });
+
+        // Step Navigation Buttons
         document.getElementById('toStep2Btn')?.addEventListener('click', () => this.goToStep(2));
         document.getElementById('toStep1Btn')?.addEventListener('click', () => this.goToStep(1));
         document.getElementById('backToInputBtn')?.addEventListener('click', () => this.goToStep(2));
 
-        // Preset Cards
-        document.querySelectorAll('.preset-card:not(.add-preset)').forEach(card => {
-            card.addEventListener('click', (e) => this.selectPreset(e.currentTarget));
+        // Board Selection (Step 1)
+        document.querySelectorAll('[data-board-field]').forEach(field => {
+            field.addEventListener('click', (e) => this.selectField(e.currentTarget.dataset.boardField, true, true));
         });
 
-        // Input Fields
-        document.querySelectorAll('.input-field').forEach(field => {
-            field.addEventListener('click', (e) => this.selectField(e.currentTarget.dataset.field));
+        // Compact Input Boxes (Step 2)
+        document.querySelectorAll('.input-box-compact[data-field]').forEach(box => {
+            box.addEventListener('click', (e) => {
+                this.selectField(e.currentTarget.dataset.field, false, true);
+            });
         });
 
-        // Keypad
+        // Grain Toggle (Step 2)
+        document.getElementById('grainToggle')?.addEventListener('click', () => this.toggleGrain());
+
+        // Keypad Keys (with haptic feedback)
         document.querySelectorAll('.key').forEach(key => {
-            key.addEventListener('click', (e) => this.handleKeyPress(e.currentTarget.dataset.key));
+            key.addEventListener('click', (e) => {
+                this.haptic('light');
+                this.handleKeyPress(e.currentTarget.dataset.key);
+            });
+        });
+
+        // Keypad Done Button
+        document.getElementById('keypadDone')?.addEventListener('click', () => this.setKeypadVisibility(false));
+        document.getElementById('keypadOverlay')?.addEventListener('click', (e) => {
+            if (e.target.id === 'keypadOverlay') this.setKeypadVisibility(false);
         });
 
         // Calculate
@@ -51,11 +93,139 @@ class CuttingAppMobile {
         document.getElementById('prevBoard')?.addEventListener('click', () => this.navigateBoard(-1));
         document.getElementById('nextBoard')?.addEventListener('click', () => this.navigateBoard(1));
 
-        // PDF Download
-        document.getElementById('downloadPdfBtn')?.addEventListener('click', () => this.downloadPDF());
+        // PDF Modal paging
+        document.getElementById('pdfPrevBoard')?.addEventListener('click', () => this.navigatePdfBoard(-1));
+        document.getElementById('pdfNextBoard')?.addEventListener('click', () => this.navigatePdfBoard(1));
+        document.getElementById('pdfCloseBtn')?.addEventListener('click', () => this.closePdfModal());
+        document.getElementById('pdfDownloadBtn')?.addEventListener('click', () => this.downloadPDF());
+        document.getElementById('pdfShareBtn')?.addEventListener('click', () => this.share());
+
+        // PDF Preview Modal
+        document.getElementById('downloadPdfBtn')?.addEventListener('click', () => this.openPdfModal());
+        document.getElementById('pdfModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'pdfModal') this.closePdfModal();
+        });
 
         // Share
         document.getElementById('shareBtn')?.addEventListener('click', () => this.share());
+
+        // Step 1: Settings Sync
+        ['boardWidth', 'boardHeight', 'boardThickness', 'kerfInput'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', () => this.updateSettingsSummary());
+        });
+
+        // Step 2: Add Part Button
+        document.getElementById('addPartBtn')?.addEventListener('click', () => this.addPart());
+
+        // UI2: Zoom Controls
+        this.initZoomHandlers('.result-canvas-wrapper', 'renderer', this.renderResult.bind(this));
+        this.initZoomHandlers('.pdf-preview-wrapper', 'pdfRenderer', this.updatePdfPreview.bind(this));
+    }
+
+    initZoomHandlers(wrapperSelector, rendererName, renderFn) {
+        const wrapper = document.querySelector(wrapperSelector);
+        if (!wrapper) return;
+
+        let isDragging = false;
+        let lastX, lastY;
+        let initialDistance = null;
+        let lastTouchTime = 0;
+
+        const handleZoom = (delta) => {
+            const renderer = this[rendererName];
+            if (!renderer) return;
+            renderer.zoom = Math.min(Math.max(0.5, renderer.zoom + delta), 10);
+            renderFn();
+        };
+
+        // Wheel Zoom
+        wrapper.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.2 : -0.2;
+            handleZoom(delta);
+        }, { passive: false });
+
+        // Mouse Pan
+        wrapper.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging || !this[rendererName]) return;
+            const dx = e.clientX - lastX;
+            const dy = e.clientY - lastY;
+            this[rendererName].offsetX += dx;
+            this[rendererName].offsetY += dy;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            renderFn();
+        });
+
+        window.addEventListener('mouseup', () => isDragging = false);
+
+        // Touch Gestures (Pinch & Pan)
+        wrapper.addEventListener('touchstart', (e) => {
+            const renderer = this[rendererName];
+            if (!renderer) return;
+
+            if (e.touches.length === 1) {
+                isDragging = true;
+                lastX = e.touches[0].clientX;
+                lastY = e.touches[0].clientY;
+
+                const now = Date.now();
+                if (now - lastTouchTime < 300) {
+                    renderer.zoom = renderer.zoom > 1.5 ? 1.0 : 3.0;
+                    renderer.offsetX = 0;
+                    renderer.offsetY = 0;
+                    renderFn();
+                }
+                lastTouchTime = now;
+            } else if (e.touches.length === 2) {
+                isDragging = false;
+                initialDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+            }
+        }, { passive: true });
+
+        wrapper.addEventListener('touchmove', (e) => {
+            const renderer = this[rendererName];
+            if (!renderer) return;
+
+            if (e.touches.length === 1 && isDragging) {
+                const dx = e.touches[0].clientX - lastX;
+                const dy = e.touches[0].clientY - lastY;
+                renderer.offsetX += dx;
+                renderer.offsetY += dy;
+                lastX = e.touches[0].clientX;
+                lastY = e.touches[0].clientY;
+                renderFn();
+            } else if (e.touches.length === 2 && initialDistance !== null) {
+                const currentDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                const delta = (currentDistance - initialDistance) * 0.01;
+                handleZoom(delta);
+                initialDistance = currentDistance;
+            }
+        }, { passive: true });
+
+        wrapper.addEventListener('touchend', () => {
+            isDragging = false;
+            initialDistance = null;
+        });
+    }
+
+    updateZoomUI() {
+        const zoomLevelEl = document.getElementById('zoomLevel');
+        if (zoomLevelEl && this.renderer) {
+            zoomLevelEl.textContent = `${Math.round(this.renderer.zoom * 100)}%`;
+        }
     }
 
     // ============================================
@@ -63,8 +233,12 @@ class CuttingAppMobile {
     // ============================================
 
     goToStep(step) {
-        const prevStep = this.currentStep;
         this.currentStep = step;
+
+        // Reset scroll position and other states if needed
+        if (step === 3) {
+            this.pdfCurrentBoardIndex = 0;
+        }
 
         // Update screen visibility
         document.querySelectorAll('.screen').forEach(screen => {
@@ -84,9 +258,31 @@ class CuttingAppMobile {
 
         this.updateStepIndicator();
 
-        // Initialize Step 2: Reset input fields
+        // Initialize Step 1: Hide keypad initially
+        if (step === 1) {
+            this.setKeypadVisibility(false);
+            document.querySelectorAll('.input-field').forEach(f => f.classList.remove('active'));
+            this.currentField = 'boardWidth';
+        }
+
+        // Initialize Step 2 from Step 1
         if (step === 2 && prevStep === 1) {
             this.resetInputFields();
+        }
+
+        // Initialize Step 2 from Step 3 (No reset, just hide keypad)
+        if (step === 2 && prevStep === 3) {
+            this.setKeypadVisibility(false);
+            document.querySelectorAll('.input-box-compact').forEach(f => f.classList.remove('active'));
+        }
+
+        if (step === 2) {
+            this.updateGrainUI();
+        }
+
+        // Initialize Step 3: Hide keypad
+        if (step === 3) {
+            this.setKeypadVisibility(false);
         }
     }
 
@@ -100,6 +296,30 @@ class CuttingAppMobile {
                 stepEl.classList.add('done');
             }
         });
+    }
+
+    changeQty(delta) {
+        let current = parseInt(this.inputValues.qty) || 1;
+        current += delta;
+        if (current < 1) current = 1;
+        if (current > 100) current = 100;
+        this.inputValues.qty = String(current);
+        this.updateInputField('qty', current);
+    }
+
+    updateSettingsSummary() {
+        const w = document.getElementById('boardWidth').value;
+        const h = document.getElementById('boardHeight').value;
+        const t = document.getElementById('boardThickness').value;
+        const k = document.getElementById('kerfInput').value;
+
+        document.getElementById('displayBoardSize').textContent = `${w} × ${h} mm`;
+        document.getElementById('displayThickness').textContent = `${t} mm`;
+        document.getElementById('displayKerf').textContent = `${k} mm`;
+
+        // Also update home screen title if it matches default
+        const title = document.querySelector('.home-title');
+        if (title) title.textContent = `합판 ${t}T`;
     }
 
     // ============================================
@@ -133,63 +353,189 @@ class CuttingAppMobile {
     // Step 2: Parts Input
     // ============================================
 
-    selectField(fieldName) {
-        this.currentField = fieldName;
-        document.querySelectorAll('.input-field').forEach(f => f.classList.remove('active'));
-        document.querySelector(`.input-field[data-field="${fieldName}"]`)?.classList.add('active');
+    selectField(field, isBoard = false, showKeypad = true) {
+        this.currentField = field;
+
+        // Remove active from all
+        document.querySelectorAll('.input-field, .input-box, .input-box-compact').forEach(f => f.classList.remove('active'));
+
+        // Add active to correct one
+        const selector = isBoard ? `[data-board-field="${field}"]` : `[data-field="${field}"]`;
+        const fieldEl = document.querySelector(selector);
+        if (fieldEl) fieldEl.classList.add('active');
+
+
+        // Clear field on click as requested
+        this.inputValues[field] = '';
+        this.updateInputField(field, '');
+
+        // Handle Keypad Visibility
+        if (showKeypad) {
+            this.setKeypadVisibility(true);
+
+            // Update Keypad Header
+            const labels = { width: '가로', height: '세로', qty: '개수' };
+            const label = labels[field] || '값 입력';
+            const labelEl = document.getElementById('keypadFieldLabel');
+            if (labelEl) labelEl.textContent = label;
+            this.updateKeypadPreview('');
+        }
+    }
+
+    setKeypadVisibility(visible) {
+        const overlay = document.getElementById('keypadOverlay');
+
+        if (visible) {
+            overlay?.classList.remove('hidden');
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('has-keypad'));
+            // Center active box view if needed
+        } else {
+            overlay?.classList.add('hidden');
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('has-keypad'));
+            // Remove selection active state when closing
+            document.querySelectorAll('.input-box-compact').forEach(f => f.classList.remove('active'));
+        }
+    }
+
+    updateKeypadPreview(value) {
+        const previewEl = document.getElementById('keypadPreview');
+        if (previewEl) {
+            previewEl.textContent = value || '0';
+        }
+    }
+
+    updateInputField(field, value) {
+        if (this.currentStep === 1) {
+            // Handle board fields in Step 1
+            if (field === 'boardWidth') {
+                const displayEl = document.getElementById('displayBoardWidth');
+                if (displayEl) displayEl.textContent = value || '-';
+                const realEl = document.getElementById('boardWidth');
+                if (realEl) realEl.value = value;
+            } else if (field === 'boardHeight') {
+                const displayEl = document.getElementById('displayBoardHeight');
+                if (displayEl) displayEl.textContent = value || '-';
+                const realEl = document.getElementById('boardHeight');
+                if (realEl) realEl.value = value;
+            }
+        } else {
+            const displayId = `input${field.charAt(0).toUpperCase() + field.slice(1)}`;
+            const element = document.getElementById(displayId);
+            if (element) {
+                element.textContent = value || '';
+                // Add a placeholder-like state if empty
+                if (!value) element.innerHTML = '<span style="color:var(--text-dim); opacity:0.3">0</span>';
+            }
+        }
     }
 
     handleKeyPress(key) {
-        const fieldMap = { width: 'inputWidth', height: 'inputHeight', qty: 'inputQty' };
-        const displayEl = document.getElementById(fieldMap[this.currentField]);
         let currentValue = this.inputValues[this.currentField];
 
         switch (key) {
             case 'C':
-                // Clear current field
                 this.inputValues[this.currentField] = '';
-                displayEl.textContent = '-';
                 break;
 
             case '←':
-                // Backspace
                 if (currentValue.length > 0) {
                     this.inputValues[this.currentField] = currentValue.slice(0, -1);
-                    displayEl.textContent = this.inputValues[this.currentField] || '-';
                 }
                 break;
 
             case '+50':
             case '+100':
-                // Add value
                 const addValue = parseInt(key.replace('+', ''));
                 const current = parseInt(currentValue) || 0;
                 this.inputValues[this.currentField] = String(current + addValue);
-                displayEl.textContent = this.inputValues[this.currentField];
                 break;
 
             case 'next':
-                this.handleNext();
-                break;
+                if (this.currentStep === 1) {
+                    if (this.currentField === 'boardWidth') {
+                        this.selectField('boardHeight', true, true);
+                    } else {
+                        this.goToStep(2);
+                    }
+                } else {
+                    const fieldOrder = ['width', 'height', 'qty'];
+                    const currentIndex = fieldOrder.indexOf(this.currentField);
+                    if (currentIndex < fieldOrder.length - 1) {
+                        this.selectField(fieldOrder[currentIndex + 1], false, true);
+                    } else {
+                        // If current is qty (or last item), close keypad or add part?
+                        // Usually 'next' on last item should close keypad or add.
+                        // Let's close keypad for now as 'done' handles closure
+                        this.setKeypadVisibility(false);
+                    }
+                }
+                return;
+
+            case 'done':
+                // UI2: Auto-transition width → height → qty → close
+                if (this.currentStep === 2) {
+                    if (this.currentField === 'width') {
+                        this.selectField('height', false, true);
+                    } else if (this.currentField === 'height') {
+                        this.selectField('qty', false, true);
+                    } else {
+                        this.setKeypadVisibility(false);
+                    }
+                } else {
+                    this.setKeypadVisibility(false);
+                }
+                return;
 
             case '00':
-                // Add double zero
                 if (currentValue.length > 0 && currentValue !== '0') {
                     this.inputValues[this.currentField] = currentValue + '00';
-                    displayEl.textContent = this.inputValues[this.currentField];
                 }
                 break;
 
             default:
-                // Digit input
-                if (currentValue === '' && key === '0') return; // No leading zero
+                if (currentValue === '' && key === '0') return;
                 this.inputValues[this.currentField] = currentValue + key;
-                displayEl.textContent = this.inputValues[this.currentField];
                 break;
         }
 
-        // Update next button text
-        this.updateNextButtonText();
+        // Update display and preview
+        this.updateInputField(this.currentField, this.inputValues[this.currentField]);
+        this.updateKeypadPreview(this.inputValues[this.currentField]);
+
+        // Validation warning for Step 2 dimensions
+        if (this.currentStep === 2 && (this.currentField === 'width' || this.currentField === 'height')) {
+            this.checkInputValidation();
+        }
+    }
+
+    checkInputValidation() {
+        const boardW = parseInt(document.getElementById('boardWidth').value);
+        const boardH = parseInt(document.getElementById('boardHeight').value);
+        const inputW = parseInt(this.inputValues.width) || 0;
+        const inputH = parseInt(this.inputValues.height) || 0;
+
+        const preview = document.getElementById('keypadPreview');
+        const warning = document.getElementById('validationWarning');
+
+        let isInvalid = false;
+        let message = '';
+
+        if (this.currentField === 'width' && inputW > boardW) {
+            isInvalid = true;
+            message = `⚠️ 원판 가로(${boardW})보다 큼`;
+        } else if (this.currentField === 'height' && inputH > boardH) {
+            isInvalid = true;
+            message = `⚠️ 원판 세로(${boardH})보다 큼`;
+        }
+
+        if (preview) {
+            preview.classList.toggle('invalid', isInvalid);
+        }
+
+        if (warning) {
+            warning.textContent = message;
+            warning.classList.toggle('show', isInvalid);
+        }
     }
 
     handleNext() {
@@ -198,7 +544,7 @@ class CuttingAppMobile {
 
         if (currentIndex < fieldOrder.length - 1) {
             // Move to next field
-            this.selectField(fieldOrder[currentIndex + 1]);
+            this.selectField(fieldOrder[currentIndex + 1], false, true);
         } else {
             // Add part
             this.addPart();
@@ -209,13 +555,12 @@ class CuttingAppMobile {
         const btn = document.getElementById('keyNext');
         if (!btn) return;
 
-        const fieldOrder = ['width', 'height', 'qty'];
-        const currentIndex = fieldOrder.indexOf(this.currentField);
-
-        if (currentIndex < fieldOrder.length - 1) {
-            btn.textContent = '다음';
+        if (this.currentStep === 1) {
+            btn.textContent = this.currentField === 'boardHeight' ? '입력 완료' : '다음';
         } else {
-            btn.textContent = '+ 추가';
+            const fieldOrder = ['width', 'height'];
+            const currentIndex = fieldOrder.indexOf(this.currentField);
+            btn.textContent = currentIndex < fieldOrder.length - 1 ? '다음' : '추가하기';
         }
     }
 
@@ -231,41 +576,164 @@ class CuttingAppMobile {
 
         const rotatable = document.getElementById('partRotatable')?.checked ?? true;
 
-        this.parts.push({ w, h, qty, rotatable });
+        this.parts.push({ width: w, height: h, qty, rotatable });
         this.renderPartsList();
         this.resetInputFields();
         this.showToast(`${w}×${h} ×${qty} 추가됨`, 'success');
     }
 
     resetInputFields() {
-        this.inputValues = { width: '', height: '', qty: '1' };
-        document.getElementById('inputWidth').textContent = '-';
-        document.getElementById('inputHeight').textContent = '-';
-        document.getElementById('inputQty').textContent = '1';
-        this.selectField('width');
+        this.inputValues.width = '';
+        this.inputValues.height = '';
+        // Keep qty as is
+
+        this.updateInputField('width', '');
+        this.updateInputField('height', '');
+        this.updateInputField('qty', this.inputValues.qty);
+        // Select width but DO NOT OPEN KEYPAD (wait for user)
+        this.selectField('width', false, false);
+    }
+
+    toggleGrain() {
+        const checkbox = document.getElementById('partRotatable');
+        const card = document.getElementById('grainToggle');
+        if (!checkbox || !card) return;
+
+        // Toggle logic: checkbox.checked means rotatable (Grain OFF)
+        // Card active means Grain ON (Not rotatable)
+        const isRotatable = checkbox.checked;
+        checkbox.checked = !isRotatable;
+
+        this.updateGrainUI();
+    }
+
+    updateGrainUI() {
+        const checkbox = document.getElementById('partRotatable');
+        const card = document.getElementById('grainToggle');
+        const labelEl = card?.querySelector('.grain-label-tiny') || card?.querySelector('.grain-status-text');
+
+        if (!checkbox || !card || !labelEl) return;
+
+        if (checkbox.checked) {
+            // Rotatable = Grain OFF (Free)
+            card.classList.remove('active');
+            labelEl.textContent = '자유 회전';
+        } else {
+            // Not Rotatable = Grain ON (Fixed)
+            card.classList.add('active');
+            labelEl.textContent = '결 고정';
+        }
     }
 
     renderPartsList() {
         const container = document.getElementById('partsList');
         if (!container) return;
 
-        container.innerHTML = this.parts.map((part, index) => `
-            <div class="part-item">
-                <span class="part-info">
-                    ${part.w}×${part.h}
-                    <span class="part-qty">×${part.qty}</span>
-                </span>
-                <button class="part-delete" onclick="app.removePart(${index})">×</button>
-            </div>
-        `).join('');
+        if (this.parts.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <span class="empty-state-icon">📦</span>
+                    <span class="empty-state-text">아직 부품이 없습니다<br>아래에서 추가해주세요 ↓</span>
+                </div>
+            `;
+        } else {
+            container.innerHTML = this.parts.map((part, index) => `
+                <div class="part-item-wrap">
+                    <div class="part-item" data-index="${index}">
+                        <span class="part-info">
+                            ${part.width}×${part.height}
+                            <span class="part-qty">×${part.qty}</span>
+                        </span>
+                        <div class="part-item-actions">
+                            <button class="item-delete-btn" onclick="app.removePart(${index})">삭제</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            this.bindSwipeEvents();
+        }
 
         const totalParts = this.parts.reduce((sum, p) => sum + p.qty, 0);
-        document.getElementById('partsCount').textContent = `부품 ${totalParts}개`;
+        document.getElementById('partsCount').textContent = `부품 목록 (${totalParts}개)`;
+    }
+
+    bindSwipeEvents() {
+        document.querySelectorAll('.part-item').forEach(item => {
+            let startX = 0;
+            let currentX = 0;
+            let isSwiping = false;
+
+            item.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                item.style.transition = 'none';
+                isSwiping = true;
+            }, { passive: true });
+
+            item.addEventListener('touchmove', (e) => {
+                if (!isSwiping) return;
+                currentX = e.touches[0].clientX;
+                const diff = currentX - startX;
+
+                // Only allow left swipe
+                if (diff < 0) {
+                    const translateX = Math.max(diff, -80);
+                    item.style.transform = `translateX(${translateX}px)`;
+                }
+            }, { passive: true });
+
+            item.addEventListener('touchend', () => {
+                isSwiping = false;
+                item.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                const diff = currentX - startX;
+
+                if (diff < -40) {
+                    item.style.transform = 'translateX(-80px)';
+                } else {
+                    item.style.transform = 'translateX(0)';
+                }
+            });
+        });
     }
 
     removePart(index) {
-        this.parts.splice(index, 1);
+        const deleted = this.parts.splice(index, 1)[0];
+        this.lastDeletedPart = { part: deleted, index: index };
         this.renderPartsList();
+        this.showUndoToast(deleted);
+    }
+
+    showUndoToast(part) {
+        const existing = document.querySelector('.undo-toast');
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.className = 'undo-toast';
+        toast.innerHTML = `
+            <span>${part.width}×${part.height} 삭제됨</span>
+            <button class="undo-btn" onclick="app.undoDelete()">되돌리기</button>
+        `;
+        document.body.appendChild(toast);
+
+        this.undoTimeout = setTimeout(() => {
+            toast.remove();
+            this.lastDeletedPart = null;
+        }, 3000);
+    }
+
+    undoDelete() {
+        if (!this.lastDeletedPart) return;
+
+        clearTimeout(this.undoTimeout);
+        const { part, index } = this.lastDeletedPart;
+        this.parts.splice(index, 0, part);
+        this.renderPartsList();
+        this.lastDeletedPart = null;
+
+        const toast = document.querySelector('.undo-toast');
+        if (toast) toast.remove();
+
+        this.showToast('되돌렸습니다', 'success');
     }
 
     clearParts() {
@@ -283,41 +751,38 @@ class CuttingAppMobile {
             return;
         }
 
-        const boardW = parseInt(document.getElementById('boardWidth').value);
-        const boardH = parseInt(document.getElementById('boardHeight').value);
+        let boardW = parseInt(document.getElementById('boardWidth').value);
+        let boardH = parseInt(document.getElementById('boardHeight').value);
         const thickness = parseInt(document.getElementById('boardThickness').value);
         const preCutting = document.getElementById('preCutting')?.checked ?? false;
 
-        // Expand parts by qty
-        const expandedParts = [];
-        this.parts.forEach((p, i) => {
-            for (let j = 0; j < p.qty; j++) {
-                expandedParts.push({
-                    w: p.w,
-                    h: p.h,
-                    rotatable: p.rotatable,
-                    id: `${i}-${j}`
-                });
-            }
-        });
+        // Apply pre-cutting logic (12mm each side = 24mm total)
+        if (preCutting) {
+            boardW -= 24;
+            boardH -= 24;
+        }
 
         // Use packer
-        const packer = new GrainAwareBinPacker(boardW, boardH, this.kerf);
-        const result = packer.pack(expandedParts);
+        const packer = new GuillotinePacker(boardW, boardH, this.kerf);
+        const result = packer.pack(this.parts);
 
         this.lastResult = result;
         this.currentBoardIndex = 0;
 
         // Calculate stats
-        const totalCuts = result.bins.reduce((sum, bin) => sum + (bin.cuts || 0), 0);
+        const totalCuts = result.bins.reduce((sum, bin) => sum + (bin.cuttingCount || 0), 0);
         const cost = this.calculateCuttingCost(thickness, totalCuts, preCutting, result.bins.length);
-        const efficiency = result.efficiency || 0;
+        const efficiency = result.totalEfficiency || 0;
 
         // Update UI
         document.getElementById('statCost').textContent = cost.toLocaleString() + '원';
         document.getElementById('statCuts').textContent = totalCuts + '회';
         document.getElementById('statBoards').textContent = result.bins.length + '장';
         document.getElementById('statEfficiency').textContent = efficiency.toFixed(1) + '%';
+
+        // Results page labels
+        const boardSizeLabel = document.getElementById('boardSizeLabel');
+        if (boardSizeLabel) boardSizeLabel.textContent = `${boardW} × ${boardH} mm`;
 
         // Render canvas
         this.renderResult();
@@ -345,17 +810,38 @@ class CuttingAppMobile {
 
         // Initialize renderer if needed
         if (!this.renderer) {
-            this.renderer = new CuttingRenderer(canvas);
+            this.renderer = new CuttingRenderer('resultCanvas');
         }
 
         const boardW = parseInt(document.getElementById('boardWidth').value);
         const boardH = parseInt(document.getElementById('boardHeight').value);
 
-        this.renderer.render(bin, boardW, boardH, this.kerf);
+        const legend = this.renderer.render(boardW, boardH, bin.placed, this.kerf);
 
         // Update indicator
-        document.getElementById('boardIndicator').textContent = 
-            `${this.currentBoardIndex + 1}/${this.lastResult.bins.length}`;
+        document.getElementById('boardIndicator').textContent =
+            `${this.currentBoardIndex + 1} / ${this.lastResult.bins.length}`;
+
+        // UI2: Display legend for small parts
+        this.updateLegend(legend);
+    }
+
+    updateLegend(legend) {
+        const container = document.getElementById('legendSection');
+        if (!container) return;
+
+        if (!legend || legend.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const circles = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
+        const items = legend.map(l => {
+            const circle = circles[l.num - 1] || `(${l.num})`;
+            return `${circle} ${l.width}×${l.height} ×${l.count}`;
+        }).join('   ');
+
+        container.innerHTML = `<span class="legend-title">범례</span> ${items}`;
     }
 
     navigateBoard(delta) {
@@ -363,6 +849,13 @@ class CuttingAppMobile {
         const newIndex = this.currentBoardIndex + delta;
         if (newIndex >= 0 && newIndex < this.lastResult.bins.length) {
             this.currentBoardIndex = newIndex;
+            // Reset zoom/pan when switching boards
+            if (this.renderer) {
+                this.renderer.zoom = 1.0;
+                this.renderer.offsetX = 0;
+                this.renderer.offsetY = 0;
+                this.updateZoomUI();
+            }
             this.renderResult();
         }
     }
@@ -371,27 +864,174 @@ class CuttingAppMobile {
     // Export & Share
     // ============================================
 
-    downloadPDF() {
-        this.showToast('PDF 생성 중...', 'info');
-        // PDF generation logic would go here
-        // Using existing jsPDF logic from v2/app.js
+    openPdfModal() {
+        if (!this.lastResult || this.lastResult.bins.length === 0) return;
+
+        const modal = document.getElementById('pdfModal');
+        if (!modal) return;
+
+        modal.classList.remove('hidden');
+        this.pdfCurrentBoardIndex = this.currentBoardIndex; // Start with current board
+
+        // Populate stats in modal
+        document.getElementById('pdfStatCost').textContent = document.getElementById('statCost').textContent;
+        document.getElementById('pdfStatCuts').textContent = document.getElementById('statCuts').textContent;
+        document.getElementById('pdfStatBoards').textContent = document.getElementById('statBoards').textContent;
+
+        this.updatePdfPreview();
     }
 
-    share() {
-        if (navigator.share) {
-            navigator.share({
-                title: '대장간 재단 결과',
-                text: `예상 비용: ${document.getElementById('statCost').textContent}`,
-                url: window.location.href
-            }).catch(() => {});
+    closePdfModal() {
+        document.getElementById('pdfModal')?.classList.add('hidden');
+    }
+
+    navigatePdfBoard(delta) {
+        if (!this.lastResult) return;
+        const newIndex = this.pdfCurrentBoardIndex + delta;
+        if (newIndex >= 0 && newIndex < this.lastResult.bins.length) {
+            this.pdfCurrentBoardIndex = newIndex;
+            this.updatePdfPreview();
+        }
+    }
+
+    updatePdfPreview() {
+        if (!this.lastResult) return;
+        const bin = this.lastResult.bins[this.pdfCurrentBoardIndex];
+
+        if (!this.pdfRenderer) {
+            this.pdfRenderer = new CuttingRenderer('pdfPreviewCanvas');
+        }
+
+        const boardW = parseInt(document.getElementById('boardWidth').value);
+        const boardH = parseInt(document.getElementById('boardHeight').value);
+
+        this.pdfRenderer.render(boardW, boardH, bin.placed, this.kerf);
+
+        // Update indicator
+        document.getElementById('pdfBoardIndicator').textContent =
+            `${this.pdfCurrentBoardIndex + 1} / ${this.lastResult.bins.length}`;
+
+        // Update efficiency tag
+        const efficiency = bin.efficiency.toFixed(1);
+        document.getElementById('pdfEfficiencyTag').textContent = `${efficiency}%`;
+    }
+
+    async downloadPDF() {
+        if (!this.lastResult || this.lastResult.bins.length === 0) return;
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const boardW = parseInt(document.getElementById('boardWidth').value);
+        const boardH = parseInt(document.getElementById('boardHeight').value);
+        const cost = document.getElementById('statCost').textContent;
+        const cuts = document.getElementById('statCuts').textContent;
+        const efficiency = document.getElementById('statEfficiency').textContent;
+
+        const totalPages = this.lastResult.bins.length;
+
+        // Create a hidden canvas for high-quality rendering
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = 1200; // High resolution
+        exportCanvas.height = 1200 * (boardH / boardW);
+        const exportRenderer = new CuttingRenderer('resultCanvas'); // Temporarily hijack ID or create new
+        exportRenderer.canvas = exportCanvas;
+        exportRenderer.ctx = exportCanvas.getContext('2d');
+
+        for (let i = 0; i < totalPages; i++) {
+            if (i > 0) doc.addPage();
+
+            // Render current board
+            const bin = this.lastResult.bins[i];
+            exportRenderer.render(boardW, boardH, bin.placed, this.kerf);
+
+            // Header info on first page
+            if (i === 0) {
+                doc.setFontSize(22);
+                doc.text('대장간 V3 재단 도면', 20, 20);
+                doc.setFontSize(12);
+                doc.text(`원판: ${boardW} × ${boardH} mm`, 20, 32);
+                doc.text(`총 비용: ${cost} | 절단: ${cuts} | 효율: ${efficiency}`, 20, 40);
+                doc.line(20, 45, 190, 45);
+            }
+
+            // Board Image
+            const imgData = exportCanvas.toDataURL('image/png');
+            doc.addImage(imgData, 'PNG', 15, 55, 180, 0);
+
+            doc.setFontSize(10);
+            doc.text(`Page ${i + 1} / ${totalPages}`, 105, 285, { align: 'center' });
+        }
+
+        doc.save(`woodcutter_V3_${Date.now()}.pdf`);
+        this.showToast('PDF 다운로드가 시작되었습니다', 'success');
+    }
+
+    async share() {
+        if (!this.lastResult) return;
+
+        const boardW = document.getElementById('boardWidth').value;
+        const boardH = document.getElementById('boardHeight').value;
+        const cost = document.getElementById('statCost').textContent;
+        const cuts = document.getElementById('statCuts').textContent;
+        const boards = this.lastResult.bins.length;
+        const efficiency = document.getElementById('statEfficiency').textContent;
+
+        const partsList = this.parts.map(p => `• ${p.width}×${p.height} ×${p.qty}개`).join('\n');
+
+        const shareText = `[대장간 V3 재단 결과]
+
+📐 원판: ${boardW} × ${boardH} mm
+📦 사용 원판: ${boards}장
+✂️ 총 절단: ${cuts}
+📊 효율: ${efficiency}
+💰 예상 비용: ${cost}
+
+─────────────────
+부품 목록:
+${partsList}
+
+📎 대장간 V3으로 작성됨`;
+
+        const canvas = document.getElementById('resultCanvas');
+        if (navigator.share && canvas) {
+            try {
+                const blob = await new Promise(resolve => canvas.toBlob(resolve));
+                const file = new File([blob], 'result.png', { type: 'image/png' });
+
+                await navigator.share({
+                    files: [file],
+                    title: '대장간 V3 재단 결과',
+                    text: shareText,
+                });
+            } catch (err) {
+                // Fallback to text only
+                navigator.share({
+                    title: '대장간 V3 재단 결과',
+                    text: shareText
+                }).catch(() => {
+                    this.copyToClipboard(shareText);
+                    this.showToast('결과가 복사되었습니다', 'success');
+                });
+            }
         } else {
-            this.showToast('공유 기능을 지원하지 않습니다', 'error');
+            this.copyToClipboard(shareText);
+            this.showToast('결과가 복사되었습니다', 'success');
         }
     }
 
     // ============================================
     // Utilities
     // ============================================
+
+    haptic(type = 'light') {
+        if (!navigator.vibrate) return;
+        switch (type) {
+            case 'light': navigator.vibrate(10); break;
+            case 'medium': navigator.vibrate(20); break;
+            case 'success': navigator.vibrate([10, 50, 10]); break;
+            case 'error': navigator.vibrate([50, 50, 50]); break;
+        }
+    }
 
     showToast(message, type = 'info') {
         // Simple toast implementation
@@ -418,6 +1058,28 @@ class CuttingAppMobile {
 
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 2500);
+    }
+
+    // ============================================
+    // Debugging
+    // ============================================
+
+    debug() {
+        console.group('/debug - Application State');
+        console.log('Current Step:', this.currentStep);
+        console.log('Current Field:', this.currentField);
+        console.log('Input Values:', { ...this.inputValues });
+        console.log('Parts:', [...this.parts]);
+        console.log('Last Result:', this.lastResult);
+        console.log('Board Specs:', {
+            width: document.getElementById('boardWidth')?.value,
+            height: document.getElementById('boardHeight')?.value,
+            thickness: document.getElementById('boardThickness')?.value,
+            kerf: this.kerf
+        });
+        console.groupEnd();
+
+        this.showToast('디버그 정보가 콘솔에 출력되었습니다', 'success');
     }
 }
 
