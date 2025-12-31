@@ -9,8 +9,10 @@ class CuttingAppMobile {
         this.currentStep = 1;
         this.currentField = 'boardWidth'; // Start with board width
         this.inputValues = {
-            boardWidth: '2400',
+            boardWidth: '2440',
             boardHeight: '1220',
+            boardThickness: '18',
+            kerf: '3',
             width: '',
             height: '',
             qty: '1'
@@ -25,7 +27,6 @@ class CuttingAppMobile {
         this.useGrain = false;
         this.renderer = null;
         this.pdfRenderer = null;
-        this.step1Renderer = null;
         this.init();
     }
 
@@ -67,6 +68,15 @@ class CuttingAppMobile {
 
         // Grain Toggle (Step 1)
         document.getElementById('grainToggleStep1')?.addEventListener('click', () => this.toggleGrainStep1());
+
+        // Pre-cutting Toggle (Step 1 - Restored)
+        document.getElementById('preCuttingToggle')?.addEventListener('click', () => {
+            const cb = document.getElementById('preCutting');
+            if (cb) {
+                cb.checked = !cb.checked;
+                this.haptic('light');
+            }
+        });
 
         // Grain Toggle (Step 2)
         document.getElementById('grainToggle')?.addEventListener('click', () => this.toggleGrain());
@@ -115,7 +125,6 @@ class CuttingAppMobile {
         ['boardWidth', 'boardHeight'].forEach(id => {
             document.getElementById(id)?.addEventListener('input', () => {
                 this.updateSettingsSummary();
-                this.updateStep1Preview();
             });
         });
 
@@ -268,7 +277,6 @@ class CuttingAppMobile {
             this.setKeypadVisibility(false);
             document.querySelectorAll('.input-field').forEach(f => f.classList.remove('active'));
             this.currentField = 'boardWidth';
-            this.updateStep1Preview();
         }
 
         if (step === 2) {
@@ -299,29 +307,10 @@ class CuttingAppMobile {
         if (step2Checkbox) step2Checkbox.checked = this.useGrain;
 
         this.haptic('light');
-        this.updateStep1Preview();
     }
 
     updateStep1Preview() {
-        if (this.currentStep !== 1) return;
-
-        const canvas = document.getElementById('step1PreviewCanvas');
-        const placeholder = document.querySelector('.preview-placeholder');
-        if (!canvas) return;
-
-        const w = parseInt(document.getElementById('boardWidth').value) || 2440;
-        const h = parseInt(document.getElementById('boardHeight').value) || 1220;
-
-        if (!this.step1Renderer) {
-            this.step1Renderer = new CuttingRenderer('step1PreviewCanvas');
-        }
-
-        // Show canvas, hide placeholder
-        canvas.classList.remove('hidden');
-        if (placeholder) placeholder.classList.add('hidden');
-
-        // Simple render of just the board
-        this.step1Renderer.render(w, h, [], 0);
+        // No-op after revision
     }
 
     changeQty(delta) {
@@ -443,6 +432,16 @@ class CuttingAppMobile {
                 if (displayEl) displayEl.textContent = value || '0';
                 const realEl = document.getElementById('boardHeight');
                 if (realEl) realEl.value = value;
+            } else if (field === 'boardThickness') {
+                const displayEl = document.getElementById('displayBoardThickness');
+                if (displayEl) displayEl.textContent = value || '0';
+                const realEl = document.getElementById('boardThickness');
+                if (realEl) realEl.value = value;
+            } else if (field === 'kerf') {
+                const displayEl = document.getElementById('displayKerf');
+                if (displayEl) displayEl.textContent = value || '0';
+                const realEl = document.getElementById('kerfInput');
+                if (realEl) realEl.value = value;
             }
         } else {
             const displayId = `input${field.charAt(0).toUpperCase() + field.slice(1)}`;
@@ -489,10 +488,12 @@ class CuttingAppMobile {
                 break;
 
             case 'done':
-                // UI4: Auto-transition width → height → qty → close
+                // UI4: Auto-transition logic
                 if (this.currentStep === 1) {
-                    if (this.currentField === 'boardWidth') {
-                        this.selectField('boardHeight', true, true);
+                    const step1Order = ['boardWidth', 'boardHeight', 'boardThickness', 'kerf'];
+                    const idx = step1Order.indexOf(this.currentField);
+                    if (idx < step1Order.length - 1) {
+                        this.selectField(step1Order[idx + 1], true, true);
                     } else {
                         this.setKeypadVisibility(false);
                     }
@@ -809,6 +810,12 @@ class CuttingAppMobile {
         document.getElementById('statCuts').textContent = totalCuts + '회';
         document.getElementById('statBoards').textContent = result.bins.length + '장';
 
+        // Update Step 3 Display Dimensions
+        const dWidth = document.getElementById('dispWidth');
+        const dHeight = document.getElementById('dispHeight');
+        if (dWidth) dWidth.textContent = boardW + 'mm';
+        if (dHeight) dHeight.textContent = boardH + 'mm';
+
         // Render canvas
         this.renderResult();
 
@@ -927,9 +934,61 @@ class CuttingAppMobile {
             // Use a one-time renderer for each canvas
             const tempRenderer = new CuttingRenderer(canvas.id);
             tempRenderer.render(boardW, boardH, bin.placed, this.kerf);
+
+            // Initialize Pinch Zoom for this container (UI4 Improvement)
+            this.initPinchZoom(container);
         });
 
         modal.classList.remove('hidden');
+    }
+
+    initPinchZoom(el) {
+        let scale = 1;
+        let lastScale = 1;
+        let startDist = 0;
+        let lastTap = 0;
+
+        el.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                startDist = Math.hypot(
+                    e.touches[0].pageX - e.touches[1].pageX,
+                    e.touches[0].pageY - e.touches[1].pageY
+                );
+            }
+        });
+
+        el.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2 && startDist > 0) {
+                const dist = Math.hypot(
+                    e.touches[0].pageX - e.touches[1].pageX,
+                    e.touches[0].pageY - e.touches[1].pageY
+                );
+                scale = Math.min(Math.max(1, lastScale * (dist / startDist)), 3);
+                el.style.transformOrigin = 'center';
+                el.style.transform = `scale(${scale})`;
+                el.style.zIndex = scale > 1 ? '10' : '1';
+                e.preventDefault(); // Prevent scroll while zooming
+            }
+        }, { passive: false });
+
+        el.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) {
+                lastScale = scale;
+                startDist = 0;
+            }
+
+            // Double Tap Detection
+            const now = Date.now();
+            if (now - lastTap < 300) {
+                scale = scale > 1 ? 1 : 2;
+                lastScale = scale;
+                el.style.transition = 'transform 0.3s ease';
+                el.style.transform = `scale(${scale})`;
+                el.style.zIndex = scale > 1 ? '10' : '1';
+                setTimeout(() => el.style.transition = '', 300);
+            }
+            lastTap = now;
+        });
     }
 
     closePdfModal() {
@@ -1043,6 +1102,42 @@ ${partsList}
     // ============================================
     // Utilities
     // ============================================
+
+    resetApp() {
+        this.parts = [];
+        this.inputValues = {
+            boardWidth: '2440',
+            boardHeight: '1220',
+            boardThickness: '18',
+            kerf: '3',
+            width: '',
+            height: '',
+            qty: '1'
+        };
+        this.useGrain = false;
+        this.lastResult = null;
+
+        // Update Step 1 Displays
+        this.updateInputField('boardWidth', '2440');
+        this.updateInputField('boardHeight', '1220');
+        this.updateInputField('boardThickness', '18');
+        this.updateInputField('kerf', '3');
+
+        // Reset Toggles
+        const preCutCb = document.getElementById('preCutting');
+        if (preCutCb) preCutCb.checked = false;
+        const grainCb = document.getElementById('grainCheckboxStep1');
+        if (grainCb) grainCb.checked = false;
+        this.updateGrainUI();
+
+        // Clear Step 2 UI
+        this.renderPartsList();
+        this.resetInputFields();
+
+        // Go to Step 1
+        this.goToStep(1);
+        this.showToast('데이터가 초기화되었습니다', 'success');
+    }
 
     haptic(type = 'light') {
         if (!navigator.vibrate) return;

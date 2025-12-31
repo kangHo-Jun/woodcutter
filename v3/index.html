@@ -17,7 +17,7 @@
     <div class="app-container">
         <!-- Header with Global Navigation -->
         <header class="app-header">
-            <div class="logo" onclick="app.goToStep(1)">대장간 <span class="version">V4</span></div>
+            <div class="logo" onclick="app.resetApp()">대장간 <span class="version">V4</span></div>
             <nav class="global-nav">
                 <span class="nav-item active" onclick="app.goToStep(1)" id="navStep1">설정</span>
                 <span class="nav-item" onclick="app.goToStep(2)" id="navStep2">입력</span>
@@ -52,33 +52,59 @@
                     </div>
                 </div>
 
-                <!-- Grain Toggle -->
-                <div class="config-toggle-item" id="grainToggleStep1">
-                    <div class="toggle-info">
-                        <span class="toggle-icon">🌾</span>
-                        <div class="toggle-text">
-                            <span class="toggle-title">결고려</span>
-                            <span class="toggle-desc">나무결 방향 맞춰 배치</span>
+                <!-- Supplementary Inputs (Restored) -->
+                <div class="supplement-inputs">
+                    <div class="input-card" data-board-field="boardThickness">
+                        <span class="card-label">원판 두께</span>
+                        <div class="card-value-row">
+                            <span class="card-value" id="displayBoardThickness">18</span>
+                            <span class="card-unit">mm</span>
                         </div>
                     </div>
-                    <div class="toggle-switch-wrap">
-                        <input type="checkbox" id="grainCheckboxStep1" class="hidden-checkbox">
-                        <div class="custom-toggle"></div>
+                    <div class="input-card" data-board-field="kerf">
+                        <span class="card-label">칼날 두께</span>
+                        <div class="card-value-row">
+                            <span class="card-value" id="displayKerf">3</span>
+                            <span class="card-unit">mm</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Preview Area -->
-                <div class="board-preview-area">
-                    <div class="preview-placeholder">
-                        <span class="placeholder-icon">📐</span>
-                        <span class="placeholder-text">원판 프리뷰</span>
+                <div class="toggle-row">
+                    <div class="config-toggle-item" id="preCuttingToggle">
+                        <div class="toggle-info">
+                            <span class="toggle-icon">✂️</span>
+                            <div class="toggle-text">
+                                <span class="toggle-title">사방 여유 재단</span>
+                                <span class="toggle-desc">테두리 12mm씩 제거 (총 24mm)</span>
+                            </div>
+                        </div>
+                        <div class="toggle-switch-wrap">
+                            <input type="checkbox" id="preCutting" class="hidden-checkbox">
+                            <div class="custom-toggle"></div>
+                        </div>
                     </div>
-                    <canvas id="step1PreviewCanvas" class="hidden"></canvas>
+
+                    <div class="config-toggle-item" id="grainToggleStep1">
+                        <div class="toggle-info">
+                            <span class="toggle-icon">🌾</span>
+                            <div class="toggle-text">
+                                <span class="toggle-title">결고려</span>
+                                <span class="toggle-desc">나무결 방향 고정</span>
+                            </div>
+                        </div>
+                        <div class="toggle-switch-wrap">
+                            <input type="checkbox" id="grainCheckboxStep1" class="hidden-checkbox">
+                            <div class="custom-toggle"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Hidden inputs for logic compatibility -->
                 <input type="number" id="boardWidth" value="2440" class="hidden">
                 <input type="number" id="boardHeight" value="1220" class="hidden">
+                <input type="number" id="boardThickness" value="18" class="hidden">
+                <input type="number" id="kerfInput" value="3" class="hidden">
                 <input type="checkbox" id="useGrain" class="hidden">
             </div>
 
@@ -217,10 +243,17 @@
                         <canvas id="resultCanvas"></canvas>
                     </div>
 
-                    <div class="canvas-controls">
-                        <button class="canvas-ctrl" id="prevBoard">◀</button>
-                        <span class="board-indicator" id="boardIndicator">1/1</span>
-                        <button class="canvas-ctrl" id="nextBoard">▶</button>
+                    <!-- Consolidate Dimensions & Pagination in One Row -->
+                    <div class="result-controls-row">
+                        <div class="dim-box" id="dispWidth">2440mm</div>
+
+                        <div class="canvas-controls">
+                            <button class="canvas-ctrl" id="prevBoard">◀</button>
+                            <span class="board-indicator" id="boardIndicator">1/1</span>
+                            <button class="canvas-ctrl" id="nextBoard">▶</button>
+                        </div>
+
+                        <div class="dim-box" id="dispHeight">1220mm</div>
                     </div>
 
                     <!-- UI2: Legend for small parts -->
