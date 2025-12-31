@@ -121,6 +121,9 @@ class CuttingAppMobile {
         // Share
         document.getElementById('shareBtn')?.addEventListener('click', () => this.share());
 
+        // Header Logo Reset
+        document.querySelector('.logo')?.addEventListener('click', () => this.resetApp());
+
         // Step 1: Settings Sync & Preview
         ['boardWidth', 'boardHeight'].forEach(id => {
             document.getElementById(id)?.addEventListener('input', () => {
@@ -132,8 +135,16 @@ class CuttingAppMobile {
         document.getElementById('addPartBtn')?.addEventListener('click', () => this.addPart());
 
         // UI2: Zoom Controls
+        // Initialize Zoom Handlers
         this.initZoomHandlers('.result-canvas-wrapper', 'renderer', this.renderResult.bind(this));
         this.initZoomHandlers('.pdf-preview-wrapper', 'pdfRenderer', this.updatePdfPreview.bind(this));
+
+        // Robust Logo Reset (Event Delegation)
+        document.body.addEventListener('click', (e) => {
+            if (e.target.closest('.logo')) {
+                this.resetApp();
+            }
+        });
     }
 
     initZoomHandlers(wrapperSelector, rendererName, renderFn) {
