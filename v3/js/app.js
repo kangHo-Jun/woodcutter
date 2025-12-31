@@ -145,6 +145,15 @@ class CuttingAppMobile {
                 this.resetApp();
             }
         });
+
+        // UI4: Tap Canvas to Show Dimensions
+        document.querySelector('.result-canvas-wrapper')?.addEventListener('click', (e) => {
+            // Simple interaction: Show dimensions on tap
+            if (e.target.tagName === 'BUTTON') return;
+            const w = this.inputValues.boardWidth;
+            const h = this.inputValues.boardHeight;
+            this.showToast(`${w} × ${h} mm`, 'info');
+        });
     }
 
     initZoomHandlers(wrapperSelector, rendererName, renderFn) {
@@ -851,9 +860,7 @@ class CuttingAppMobile {
         document.getElementById('statBoards').textContent = result.bins.length + '장';
 
         // Update Step 3 Display Dimensions
-        // Update Step 3 Display Dimensions
-        const dTopWidth = document.getElementById('dispTopWidth');
-        if (dTopWidth) dTopWidth.textContent = boardW + 'mm';
+        // Update Step 3 Display Dimensions: Replaced by Toast Interaction
 
         // Render canvas
         this.renderResult();
