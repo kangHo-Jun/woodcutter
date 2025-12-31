@@ -1764,40 +1764,41 @@ input:checked+.toggle-slider:before {
     display: flex;
     flex-direction: column;
     height: 100%;
-    overflow: hidden;
+    overflow: visible;
+    /* V4: Allow canvas to pan beyond boundaries */
     position: relative;
-    /* Ensure containment */
 }
 
 /* 2. Removed Top Label Styles (HTML is gone) */
 /* .board-top-label rules deleted */
 
-/* 3. Maximize Canvas Wrapper & Fix Overlap */
+/* 3. Maximize Canvas Wrapper & Enable Full Pan */
 .result-canvas-wrapper {
     flex-grow: 1;
     margin: 0 !important;
     padding: 0 !important;
-    /* Zero padding as requested */
     border-radius: 0;
-    /* Remove radius for full edge-to-edge if needed, but keeping small radius is nicer? User said maximize. Let's keep small radius or 0. */
     background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
+    overflow: visible;
+    /* V4: Allow canvas to pan beyond boundaries */
     width: 100%;
+    position: relative;
+    z-index: 100;
+    /* High z-index so canvas can appear over summary bar and footer */
 }
 
-/* CRITICAL: Protect Canvas from growing too large */
+/* Canvas itself needs high z-index when zoomed */
 #resultCanvas {
     width: auto !important;
-    /* Let aspect ratio decide */
     height: auto !important;
     max-width: 100%;
-    /* Constrain width */
     max-height: 100%;
-    /* Constrain height */
     object-fit: contain;
+    position: relative;
+    z-index: 100;
 }
 
 /* 4. Compact Control Row (Area B minimized) */
